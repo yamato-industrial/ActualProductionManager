@@ -36,21 +36,3 @@
         </div>
     </div>
 </div>
-
-<!-- Debug情報表示（Development環境のみ）-->
-@if (environmentName == "Development")
-{
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card card-outline card-info">
-                <div class="card-header">
-                    <h3 class="card-title">デバッグ情報</h3>
-                </div>
-                <div class="card-body small">
-                    <p><strong>環境:</strong> <code>@environmentName</code></p>
-                    <p><strong>スキーマ:</strong> <code>@schema</code></p>
-                </div>
-            </div>
-        </div>
-    </div>
-}

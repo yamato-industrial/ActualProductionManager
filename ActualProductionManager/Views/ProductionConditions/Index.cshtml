@@ -1,0 +1,80 @@
+@model List<ActualProductionManager.Controllers.ProductionConditionViewModel>
+
+@{
+    ViewData["Title"] = "生産条件管理";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">生産条件一覧</h3>
+                <div class="card-tools">
+                    <a href="#" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> 新規登録
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>ラインコード</th>
+                            <th>ライン名</th>
+                            <th>品目コード</th>
+                            <th>品目名</th>
+                            <th>目標サイクルタイム</th>
+                            <th>取り数</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var condition in Model)
+                        {
+                            <tr>
+                                <td>@condition.LineCode</td>
+                                <td>@condition.LineName</td>
+                                <td>@condition.ItemCode</td>
+                                <td>@condition.ItemName</td>
+                                <td>
+                                    <form method="post" action="@Url.Action("Update")" style="display:inline;">
+                                        <input type="hidden" name="lineCode" value="@condition.LineCode" />
+                                        <input type="hidden" name="itemCode" value="@condition.ItemCode" />
+                                        <div class="input-group input-group-sm" style="width: 100px;">
+                                            <input type="number" class="form-control" name="targetCycleTime" value="@condition.TargetCycleTime" min="1" />
+                                            <span class="input-group-append">
+                                                <button type="submit" class="btn btn-info btn-flat">
+                                                    <i class="fas fa-save"></i>
+                                                </button>
+                                            </span>
+                                        </div>
+                                    </form>
+                                </td>
+                                <td>
+                                    <form method="post" action="@Url.Action("Update")" style="display:inline;">
+                                        <input type="hidden" name="lineCode" value="@condition.LineCode" />
+                                        <input type="hidden" name="itemCode" value="@condition.ItemCode" />
+                                        <input type="hidden" name="targetCycleTime" value="@condition.TargetCycleTime" />
+                                        <div class="input-group input-group-sm" style="width: 100px;">
+                                            <input type="number" class="form-control" name="piecesPerCycle" value="@condition.PiecesPerCycle" min="1" />
+                                            <span class="input-group-append">
+                                                <button type="submit" class="btn btn-info btn-flat">
+                                                    <i class="fas fa-save"></i>
+                                                </button>
+                                            </span>
+                                        </div>
+                                    </form>
+                                </td>
+                                <td>
+                                    <a href="@Url.Action("Delete", new { lineCode = condition.LineCode, itemCode = condition.ItemCode })" class="btn btn-danger btn-sm" onclick="return confirm('削除してもよろしいですか？')">
+                                        <i class="fas fa-trash"></i> 削除
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

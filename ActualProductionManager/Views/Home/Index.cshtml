@@ -1,8 +1,37 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+
+@{
+    ViewData["Title"] = "ホーム";
+    string environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="row">
+    <!-- Welcome Card -->
+    <div class="col-12 col-md-8">
+        <div class="card card-success">
+            <div class="card-header">
+                <h3 class="card-title">ようこそ</h3>
+            </div>
+            <div class="card-body">
+                <p>生産実績管理システムのマスタ管理画面です。</p>
+                <p class="text-muted">左メニューから各機能にアクセスしてください。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Links Card -->
+    <div class="col-12 col-md-4">
+        <div class="card card-warning">
+            <div class="card-header">
+                <h3 class="card-title">クイックリンク</h3>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><a href="#"><i class="fas fa-link"></i> 生産条件管理</a></li>
+                    <li><a href="#"><i class="fas fa-link"></i> 段取り時間管理</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
 </div>

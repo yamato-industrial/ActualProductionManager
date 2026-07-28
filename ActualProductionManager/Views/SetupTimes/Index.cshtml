@@ -1,0 +1,64 @@
+@model List<ActualProductionManager.Controllers.SetupTimeViewModel>
+
+@{
+    ViewData["Title"] = "段取り時間管理";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">段取り時間一覧</h3>
+                <div class="card-tools">
+                    <a href="#" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> 新規登録
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>ラインコード</th>
+                            <th>ライン名</th>
+                            <th>品目コード</th>
+                            <th>品目名</th>
+                            <th>目標段取り時間</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var setupTime in Model)
+                        {
+                            <tr>
+                                <td>@setupTime.LineCode</td>
+                                <td>@setupTime.LineName</td>
+                                <td>@setupTime.ItemCode</td>
+                                <td>@setupTime.ItemName</td>
+                                <td>
+                                    <form method="post" action="@Url.Action("Update")" style="display:inline;">
+                                        <input type="hidden" name="lineCode" value="@setupTime.LineCode" />
+                                        <input type="hidden" name="itemCode" value="@setupTime.ItemCode" />
+                                        <div class="input-group input-group-sm" style="width: 120px;">
+                                            <input type="number" class="form-control" name="targetSetupTime" value="@setupTime.TargetSetupTime" min="1" />
+                                            <span class="input-group-append">
+                                                <button type="submit" class="btn btn-info btn-flat">
+                                                    <i class="fas fa-save"></i>
+                                                </button>
+                                            </span>
+                                        </div>
+                                    </form>
+                                </td>
+                                <td>
+                                    <a href="@Url.Action("Delete", new { lineCode = setupTime.LineCode, itemCode = setupTime.ItemCode })" class="btn btn-danger btn-sm" onclick="return confirm('削除してもよろしいですか？')">
+                                        <i class="fas fa-trash"></i> 削除
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

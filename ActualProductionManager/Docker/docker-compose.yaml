@@ -1,0 +1,29 @@
+﻿version: "3"
+
+services:
+  webapp:
+    image: ubuntu:24.04
+    container_name: actualproductionmanager-webapp
+
+    ports:
+      - 49153:80
+
+    volumes:
+      - entrypoint:/entrypoint
+      - nginx:/etc/nginx
+      - app:/var/app
+
+    network_mode: bridge
+
+    entrypoint: >
+      /bin/bash -c '
+      chmod +x /entrypoint/docker-entrypoint.sh &&
+      /entrypoint/docker-entrypoint.sh
+      '
+
+    tty: true
+
+volumes:
+  entrypoint:
+  app:
+  nginx:

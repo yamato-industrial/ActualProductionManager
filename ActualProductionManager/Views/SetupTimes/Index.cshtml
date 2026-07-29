@@ -2,6 +2,10 @@
 
 @{
     ViewData["Title"] = "段取り時間管理";
+    var searchLineCode = ViewData["SearchLineCode"]?.ToString();
+    var searchItemCode = ViewData["SearchItemCode"]?.ToString();
+    var sortBy = ViewData["SortBy"]?.ToString() ?? "lineCode";
+    var sortOrder = ViewData["SortOrder"]?.ToString() ?? "asc";
 }
 
 <div class="row">
@@ -15,45 +19,116 @@
                     </a>
                 </div>
             </div>
+
+            <!-- フィルタセクション -->
+            <div class="card-body bg-light">
+                <form method="get" class="form-inline" style="gap: 10px;">
+                    <div class="form-group">
+                        <label for="searchLineCode" class="mr-2">ラインコード:</label>
+                        <input type="text" id="searchLineCode" name="searchLineCode" class="form-control form-control-sm" value="@searchLineCode" placeholder="検索...">
+                    </div>
+                    <div class="form-group">
+                        <label for="searchItemCode" class="mr-2">品目コード:</label>
+                        <input type="text" id="searchItemCode" name="searchItemCode" class="form-control form-control-sm" value="@searchItemCode" placeholder="検索...">
+                    </div>
+                    <button type="submit" class="btn btn-info btn-sm">
+                        <i class="fas fa-search"></i> 検索
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-redo"></i> リセット
+                    </a>
+                </form>
+            </div>
+
+            <!-- テーブル -->
             <div class="card-body">
                 <table class="table table-bordered table-striped">
                     <thead>
                         <tr>
-                            <th>ラインコード</th>
-                            <th>ライン名</th>
-                            <th>品目コード</th>
-                            <th>品目名</th>
-                            <th>目標段取り時間</th>
+                            <th>
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "lineCode", sortOrder = (sortBy == "lineCode" && sortOrder == "asc") ? "desc" : "asc" })">
+                                    ラインコード
+                                    @if (sortBy == "lineCode")
+                                    {
+                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
+                                    }
+                                </a>
+                            </th>
+                            <th>
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "lineName", sortOrder = (sortBy == "lineName" && sortOrder == "asc") ? "desc" : "asc" })">
+                                    ライン名
+                                    @if (sortBy == "lineName")
+                                    {
+                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
+                                    }
+                                </a>
+                            </th>
+                            <th>
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "itemCode", sortOrder = (sortBy == "itemCode" && sortOrder == "asc") ? "desc" : "asc" })">
+                                    品目コード
+                                    @if (sortBy == "itemCode")
+                                    {
+                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
+                                    }
+                                </a>
+                            </th>
+                            <th>
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "itemName", sortOrder = (sortBy == "itemName" && sortOrder == "asc") ? "desc" : "asc" })">
+                                    品目番号/名称
+                                    @if (sortBy == "itemName")
+                                    {
+                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
+                                    }
+                                </a>
+                            </th>
+                            <th>
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "targetSetupTime", sortOrder = (sortBy == "targetSetupTime" && sortOrder == "asc") ? "desc" : "asc" })">
+                                    目標段取り時間
+                                    @if (sortBy == "targetSetupTime")
+                                    {
+                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
+                                    }
+                                </a>
+                            </th>
                             <th>操作</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var setupTime in Model)
+                        @if (Model.Any())
+                        {
+                            @foreach (var setupTime in Model)
+                            {
+                                <tr>
+                                    <td>@setupTime.LineCode</td>
+                                    <td>@setupTime.LineName</td>
+                                    <td>@setupTime.ItemCode</td>
+                                    <td>@setupTime.ItemName</td>
+                                    <td>
+                                        <form method="post" action="@Url.Action("Update")" style="display:inline;">
+                                            <input type="hidden" name="lineCode" value="@setupTime.LineCode" />
+                                            <input type="hidden" name="itemCode" value="@setupTime.ItemCode" />
+                                            <div class="input-group input-group-sm" style="width: 120px;">
+                                                <input type="number" class="form-control" name="targetSetupTime" value="@setupTime.TargetSetupTime" min="1" />
+                                                <span class="input-group-append">
+                                                    <button type="submit" class="btn btn-info btn-flat">
+                                                        <i class="fas fa-save"></i>
+                                                    </button>
+                                                </span>
+                                            </div>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <a href="@Url.Action("Delete", new { lineCode = setupTime.LineCode, itemCode = setupTime.ItemCode })" class="btn btn-danger btn-sm" onclick="return confirm('削除してもよろしいですか？')">
+                                            <i class="fas fa-trash"></i> 削除
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
                         {
                             <tr>
-                                <td>@setupTime.LineCode</td>
-                                <td>@setupTime.LineName</td>
-                                <td>@setupTime.ItemCode</td>
-                                <td>@setupTime.ItemName</td>
-                                <td>
-                                    <form method="post" action="@Url.Action("Update")" style="display:inline;">
-                                        <input type="hidden" name="lineCode" value="@setupTime.LineCode" />
-                                        <input type="hidden" name="itemCode" value="@setupTime.ItemCode" />
-                                        <div class="input-group input-group-sm" style="width: 120px;">
-                                            <input type="number" class="form-control" name="targetSetupTime" value="@setupTime.TargetSetupTime" min="1" />
-                                            <span class="input-group-append">
-                                                <button type="submit" class="btn btn-info btn-flat">
-                                                    <i class="fas fa-save"></i>
-                                                </button>
-                                            </span>
-                                        </div>
-                                    </form>
-                                </td>
-                                <td>
-                                    <a href="@Url.Action("Delete", new { lineCode = setupTime.LineCode, itemCode = setupTime.ItemCode })" class="btn btn-danger btn-sm" onclick="return confirm('削除してもよろしいですか？')">
-                                        <i class="fas fa-trash"></i> 削除
-                                    </a>
-                                </td>
+                                <td colspan="6" class="text-center text-muted">検索条件に合致するデータがありません</td>
                             </tr>
                         }
                     </tbody>

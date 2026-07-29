@@ -2,6 +2,10 @@
 
 @{
     ViewData["Title"] = "生産条件管理";
+    var searchLineCode = ViewData["SearchLineCode"]?.ToString();
+    var searchItemCode = ViewData["SearchItemCode"]?.ToString();
+    var sortBy = ViewData["SortBy"]?.ToString() ?? "lineCode";
+    var sortOrder = ViewData["SortOrder"]?.ToString() ?? "asc";
 }
 
 <div class="row">
@@ -15,61 +19,132 @@
                     </a>
                 </div>
             </div>
+
+            <!-- フィルタセクション -->
+            <div class="card-body bg-light">
+                <form method="get" class="form-inline" style="gap: 10px;">
+                    <div class="form-group">
+                        <label for="searchLineCode" class="mr-2">ラインコード:</label>
+                        <input type="text" id="searchLineCode" name="searchLineCode" class="form-control form-control-sm" value="@searchLineCode" placeholder="検索...">
+                    </div>
+                    <div class="form-group">
+                        <label for="searchItemCode" class="mr-2">品目コード:</label>
+                        <input type="text" id="searchItemCode" name="searchItemCode" class="form-control form-control-sm" value="@searchItemCode" placeholder="検索...">
+                    </div>
+                    <button type="submit" class="btn btn-info btn-sm">
+                        <i class="fas fa-search"></i> 検索
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-redo"></i> リセット
+                    </a>
+                </form>
+            </div>
+
+            <!-- テーブル -->
             <div class="card-body">
                 <table class="table table-bordered table-striped">
                     <thead>
                         <tr>
-                            <th>ラインコード</th>
-                            <th>ライン名</th>
-                            <th>品目コード</th>
-                            <th>品目名</th>
-                            <th>目標サイクルタイム</th>
+                            <th>
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "lineCode", sortOrder = (sortBy == "lineCode" && sortOrder == "asc") ? "desc" : "asc" })">
+                                    ラインコード
+                                    @if (sortBy == "lineCode")
+                                    {
+                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
+                                    }
+                                </a>
+                            </th>
+                            <th>
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "lineName", sortOrder = (sortBy == "lineName" && sortOrder == "asc") ? "desc" : "asc" })">
+                                    ライン名
+                                    @if (sortBy == "lineName")
+                                    {
+                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
+                                    }
+                                </a>
+                            </th>
+                            <th>
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "itemCode", sortOrder = (sortBy == "itemCode" && sortOrder == "asc") ? "desc" : "asc" })">
+                                    品目コード
+                                    @if (sortBy == "itemCode")
+                                    {
+                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
+                                    }
+                                </a>
+                            </th>
+                            <th>
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "itemName", sortOrder = (sortBy == "itemName" && sortOrder == "asc") ? "desc" : "asc" })">
+                                    品目番号/名称
+                                    @if (sortBy == "itemName")
+                                    {
+                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
+                                    }
+                                </a>
+                            </th>
+                            <th>
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "targetCycleTime", sortOrder = (sortBy == "targetCycleTime" && sortOrder == "asc") ? "desc" : "asc" })">
+                                    目標サイクルタイム
+                                    @if (sortBy == "targetCycleTime")
+                                    {
+                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
+                                    }
+                                </a>
+                            </th>
                             <th>取り数</th>
                             <th>操作</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var condition in Model)
+                        @if (Model.Any())
+                        {
+                            @foreach (var condition in Model)
+                            {
+                                <tr>
+                                    <td>@condition.LineCode</td>
+                                    <td>@condition.LineName</td>
+                                    <td>@condition.ItemCode</td>
+                                    <td>@condition.ItemName</td>
+                                    <td>
+                                        <form method="post" action="@Url.Action("Update")" style="display:inline;">
+                                            <input type="hidden" name="lineCode" value="@condition.LineCode" />
+                                            <input type="hidden" name="itemCode" value="@condition.ItemCode" />
+                                            <div class="input-group input-group-sm" style="width: 100px;">
+                                                <input type="number" class="form-control" name="targetCycleTime" value="@condition.TargetCycleTime" min="1" />
+                                                <span class="input-group-append">
+                                                    <button type="submit" class="btn btn-info btn-flat">
+                                                        <i class="fas fa-save"></i>
+                                                    </button>
+                                                </span>
+                                            </div>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form method="post" action="@Url.Action("Update")" style="display:inline;">
+                                            <input type="hidden" name="lineCode" value="@condition.LineCode" />
+                                            <input type="hidden" name="itemCode" value="@condition.ItemCode" />
+                                            <input type="hidden" name="targetCycleTime" value="@condition.TargetCycleTime" />
+                                            <div class="input-group input-group-sm" style="width: 100px;">
+                                                <input type="number" class="form-control" name="piecesPerCycle" value="@condition.PiecesPerCycle" min="1" />
+                                                <span class="input-group-append">
+                                                    <button type="submit" class="btn btn-info btn-flat">
+                                                        <i class="fas fa-save"></i>
+                                                    </button>
+                                                </span>
+                                            </div>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <a href="@Url.Action("Delete", new { lineCode = condition.LineCode, itemCode = condition.ItemCode })" class="btn btn-danger btn-sm" onclick="return confirm('削除してもよろしいですか？')">
+                                            <i class="fas fa-trash"></i> 削除
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
                         {
                             <tr>
-                                <td>@condition.LineCode</td>
-                                <td>@condition.LineName</td>
-                                <td>@condition.ItemCode</td>
-                                <td>@condition.ItemName</td>
-                                <td>
-                                    <form method="post" action="@Url.Action("Update")" style="display:inline;">
-                                        <input type="hidden" name="lineCode" value="@condition.LineCode" />
-                                        <input type="hidden" name="itemCode" value="@condition.ItemCode" />
-                                        <div class="input-group input-group-sm" style="width: 100px;">
-                                            <input type="number" class="form-control" name="targetCycleTime" value="@condition.TargetCycleTime" min="1" />
-                                            <span class="input-group-append">
-                                                <button type="submit" class="btn btn-info btn-flat">
-                                                    <i class="fas fa-save"></i>
-                                                </button>
-                                            </span>
-                                        </div>
-                                    </form>
-                                </td>
-                                <td>
-                                    <form method="post" action="@Url.Action("Update")" style="display:inline;">
-                                        <input type="hidden" name="lineCode" value="@condition.LineCode" />
-                                        <input type="hidden" name="itemCode" value="@condition.ItemCode" />
-                                        <input type="hidden" name="targetCycleTime" value="@condition.TargetCycleTime" />
-                                        <div class="input-group input-group-sm" style="width: 100px;">
-                                            <input type="number" class="form-control" name="piecesPerCycle" value="@condition.PiecesPerCycle" min="1" />
-                                            <span class="input-group-append">
-                                                <button type="submit" class="btn btn-info btn-flat">
-                                                    <i class="fas fa-save"></i>
-                                                </button>
-                                            </span>
-                                        </div>
-                                    </form>
-                                </td>
-                                <td>
-                                    <a href="@Url.Action("Delete", new { lineCode = condition.LineCode, itemCode = condition.ItemCode })" class="btn btn-danger btn-sm" onclick="return confirm('削除してもよろしいですか？')">
-                                        <i class="fas fa-trash"></i> 削除
-                                    </a>
-                                </td>
+                                <td colspan="7" class="text-center text-muted">検索条件に合致するデータがありません</td>
                             </tr>
                         }
                     </tbody>

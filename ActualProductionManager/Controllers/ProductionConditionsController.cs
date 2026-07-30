@@ -21,7 +21,9 @@ namespace ActualProductionManager.Controllers
             string? searchLineCode,
             string? searchItemCode,
             string sortBy = "lineCode",
-            string sortOrder = "asc")
+            string sortOrder = "asc",
+            int pageSize = 10,
+            int page = 1)
         {
             try
             {
@@ -49,14 +51,37 @@ namespace ActualProductionManager.Controllers
                         : query.OrderByDescending(c => c.LineCode).ThenByDescending(c => c.ItemCode),
                 };
 
-                var conditions = await query.ToListAsync();
+                var allowedPageSizes = new[] { 10, 25, 50, 100 };
+                if (!allowedPageSizes.Contains(pageSize))
+                {
+                    pageSize = 10;
+                }
+
+                page = Math.Max(page, 1);
+                var totalCount = await query.CountAsync();
+                var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+                page = Math.Min(page, totalPages);
+
+                var conditions = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var lineCodes = conditions.Select(x => x.LineCode).Distinct().ToList();
+                var itemCodes = conditions.Select(x => x.ItemCode).Distinct().ToList();
+                var lineNames = await _context.Lines
+                    .Where(line => lineCodes.Contains(line.Code))
+                    .ToDictionaryAsync(line => line.Code, line => line.Name);
+                var itemNames = await _context.Items
+                    .Where(item => itemCodes.Contains(item.Code))
+                    .ToDictionaryAsync(item => item.Code, item => item.Name);
 
                 var viewModels = conditions.Select(c => new ProductionConditionViewModel
                 {
                     LineCode = c.LineCode,
-                    LineName = c.LineCode,
+                    LineName = lineNames.GetValueOrDefault(c.LineCode, c.LineCode),
                     ItemCode = c.ItemCode,
-                    ItemName = c.ItemCode,
+                    ItemName = itemNames.GetValueOrDefault(c.ItemCode, c.ItemCode),
                     TargetCycleTime = c.TargetCycleTime,
                     PiecesPerCycle = c.PiecesPerCycle
                 }).ToList();
@@ -65,6 +90,10 @@ namespace ActualProductionManager.Controllers
                 ViewData["SearchItemCode"] = searchItemCode;
                 ViewData["SortBy"] = sortBy;
                 ViewData["SortOrder"] = sortOrder;
+                ViewData["PageSize"] = pageSize;
+                ViewData["Page"] = page;
+                ViewData["TotalCount"] = totalCount;
+                ViewData["TotalPages"] = totalPages;
 
                 return View(viewModels);
             }
@@ -73,6 +102,72 @@ namespace ActualProductionManager.Controllers
                 _logger.LogError(ex, "生産条件データ取得エラー");
                 TempData["ErrorMessage"] = $"データ取得エラー: {ex.Message}";
                 return View(new List<ProductionConditionViewModel>());
+            }
+        }
+
+        public async Task<IActionResult> Create(int pageSize = 10, int page = 1)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+
+            try
+            {
+                var allowedPageSizes = new[] { 10, 25, 50, 100 };
+                if (!allowedPageSizes.Contains(pageSize))
+                {
+                    pageSize = 10;
+                }
+
+                page = Math.Max(page, 1);
+
+                var registeredKeys = _context.ProductionConditions
+                    .Select(x => new { x.LineCode, x.ItemCode });
+
+                var query =
+                    from line in _context.Lines
+                    from item in _context.Items
+                    join registered in registeredKeys
+                        on new { LineCode = line.Code, ItemCode = item.Code }
+                        equals new { registered.LineCode, registered.ItemCode } into registeredGroup
+                    from registered in registeredGroup.DefaultIfEmpty()
+                    where registered == null
+                    orderby line.Code, item.Code
+                    select new ProductionConditionRegistrationViewModel
+                    {
+                        LineCode = line.Code,
+                        LineName = line.Name,
+                        ItemCode = item.Code,
+                        ItemName = item.Name
+                    };
+
+                _logger.LogInformation(query.ToQueryString());
+
+                _logger.LogInformation("Count開始");
+
+                var totalCount = await query.CountAsync();
+                var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
+                page = Math.Min(page, totalPages);
+
+                _logger.LogInformation("Count終了 {Time} ms", sw.ElapsedMilliseconds);
+
+                var viewModels = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                _logger.LogInformation("一覧取得終了 {Time} ms", sw.ElapsedMilliseconds);
+
+                ViewData["PageSize"] = pageSize;
+                ViewData["Page"] = page;
+                ViewData["TotalCount"] = totalCount;
+                ViewData["TotalPages"] = totalPages;
+
+                return View(viewModels);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "生産条件登録候補データ取得エラー");
+                TempData["ErrorMessage"] = $"データ取得エラー: {ex.Message}";
+                return View(new List<ProductionConditionRegistrationViewModel>());
             }
         }
 
@@ -142,6 +237,14 @@ namespace ActualProductionManager.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+    }
+
+    public class ProductionConditionRegistrationViewModel
+    {
+        public string LineCode { get; set; } = string.Empty;
+        public string LineName { get; set; } = string.Empty;
+        public string ItemCode { get; set; } = string.Empty;
+        public string ItemName { get; set; } = string.Empty;
     }
 
     public class ProductionConditionViewModel

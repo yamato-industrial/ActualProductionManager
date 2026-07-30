@@ -1,0 +1,50 @@
+﻿@model List<ActualProductionManager.Controllers.ProductionConditionRegistrationViewModel>
+
+@{
+    ViewData["Title"] = "生産条件登録";
+    var pageSize = (int)(ViewData["PageSize"] ?? 10);
+    var currentPage = (int)(ViewData["Page"] ?? 1);
+    var totalCount = (int)(ViewData["TotalCount"] ?? 0);
+    var totalPages = (int)(ViewData["TotalPages"] ?? 1);
+    var pageSizes = new[] { 10, 25, 50, 100 };
+}
+
+<div class="card">
+    <div class="card-header"><h3 class="card-title">生産条件登録候補一覧</h3></div>
+    <div class="card-body">
+        <form method="get" class="form-inline mb-3">
+            <label for="pageSize" class="mr-2">表示件数:</label>
+            <select id="pageSize" name="pageSize" class="form-control form-control-sm" onchange="this.form.submit()">
+                @foreach (var size in pageSizes)
+                {
+                    <option value="@size" selected="@(size == pageSize)">@size 件</option>
+                }
+            </select>
+        </form>
+        <table class="table table-bordered table-striped">
+            <thead><tr><th>ラインコード</th><th>ライン名</th><th>品目コード</th><th>品目名</th></tr></thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr><td>@item.LineCode</td><td>@item.LineName</td><td>@item.ItemCode</td><td>@item.ItemName</td></tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="4" class="text-center text-muted">登録候補データがありません</td></tr>
+                }
+            </tbody>
+        </table>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div class="text-muted">@totalCount 件中 @(((currentPage - 1) * pageSize) + (Model.Any() ? 1 : 0)) - @(Math.Min(currentPage * pageSize, totalCount)) 件を表示</div>
+            <ul class="pagination pagination-sm m-0">
+                <li class="page-item @(currentPage <= 1 ? "disabled" : "")"><a class="page-link" href="@Url.Action("Create", new { pageSize, page = currentPage - 1 })">前へ</a></li>
+                <li class="page-item disabled"><span class="page-link">@currentPage / @totalPages</span></li>
+                <li class="page-item @(currentPage >= totalPages ? "disabled" : "")"><a class="page-link" href="@Url.Action("Create", new { pageSize, page = currentPage + 1 })">次へ</a></li>
+            </ul>
+        </div>
+        <a href="@Url.Action("Index")" class="btn btn-secondary btn-sm mt-3">一覧へ戻る</a>
+    </div>
+</div>

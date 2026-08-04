@@ -1,7 +1,7 @@
 @model List<ActualProductionManager.Controllers.ProductionConditionViewModel>
 
 @{
-    ViewData["Title"] = "生産条件管理";
+    ViewData["Title"] = "生産条件";
     var searchLineCode = ViewData["SearchLineCode"]?.ToString();
     var searchItemCode = ViewData["SearchItemCode"]?.ToString();
     var sortBy = ViewData["SortBy"]?.ToString() ?? "lineCode";
@@ -51,7 +51,7 @@
                     <thead>
                         <tr>
                             <th>
-                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, pageSize, sortBy = "lineCode", sortOrder = (sortBy == "lineCode" && sortOrder == "asc") ? "desc" : "asc" })">
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "lineCode", sortOrder = (sortBy == "lineCode" && sortOrder == "asc") ? "desc" : "asc" })">
                                     ラインコード
                                     @if (sortBy == "lineCode")
                                     {
@@ -60,7 +60,7 @@
                                 </a>
                             </th>
                             <th>
-                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, pageSize, sortBy = "lineName", sortOrder = (sortBy == "lineName" && sortOrder == "asc") ? "desc" : "asc" })">
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "lineName", sortOrder = (sortBy == "lineName" && sortOrder == "asc") ? "desc" : "asc" })">
                                     ライン名
                                     @if (sortBy == "lineName")
                                     {
@@ -69,7 +69,7 @@
                                 </a>
                             </th>
                             <th>
-                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, pageSize, sortBy = "itemCode", sortOrder = (sortBy == "itemCode" && sortOrder == "asc") ? "desc" : "asc" })">
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "itemCode", sortOrder = (sortBy == "itemCode" && sortOrder == "asc") ? "desc" : "asc" })">
                                     品目コード
                                     @if (sortBy == "itemCode")
                                     {
@@ -78,7 +78,7 @@
                                 </a>
                             </th>
                             <th>
-                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, pageSize, sortBy = "itemName", sortOrder = (sortBy == "itemName" && sortOrder == "asc") ? "desc" : "asc" })">
+                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "itemName", sortOrder = (sortBy == "itemName" && sortOrder == "asc") ? "desc" : "asc" })">
                                     品目番号/名称
                                     @if (sortBy == "itemName")
                                     {
@@ -86,16 +86,8 @@
                                     }
                                 </a>
                             </th>
-                            <th>
-                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, pageSize, sortBy = "targetCycleTime", sortOrder = (sortBy == "targetCycleTime" && sortOrder == "asc") ? "desc" : "asc" })">
-                                    目標サイクルタイム
-                                    @if (sortBy == "targetCycleTime")
-                                    {
-                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
-                                    }
-                                </a>
-                            </th>
-                            <th>取り数</th>
+                            <th>目標サイクルタイム（秒）</th>
+                            <th>サイクルあたりの個数</th>
                             <th>操作</th>
                         </tr>
                     </thead>
@@ -113,7 +105,7 @@
                                         <form method="post" action="@Url.Action("Update")" style="display:inline;">
                                             <input type="hidden" name="lineCode" value="@condition.LineCode" />
                                             <input type="hidden" name="itemCode" value="@condition.ItemCode" />
-                                            <div class="input-group input-group-sm" style="width: 100px;">
+                                            <div class="input-group input-group-sm" style="width: 120px;">
                                                 <input type="number" class="form-control" name="targetCycleTime" value="@condition.TargetCycleTime" min="1" />
                                                 <span class="input-group-append">
                                                     <button type="submit" class="btn btn-info btn-flat">
@@ -127,8 +119,7 @@
                                         <form method="post" action="@Url.Action("Update")" style="display:inline;">
                                             <input type="hidden" name="lineCode" value="@condition.LineCode" />
                                             <input type="hidden" name="itemCode" value="@condition.ItemCode" />
-                                            <input type="hidden" name="targetCycleTime" value="@condition.TargetCycleTime" />
-                                            <div class="input-group input-group-sm" style="width: 100px;">
+                                            <div class="input-group input-group-sm" style="width: 120px;">
                                                 <input type="number" class="form-control" name="piecesPerCycle" value="@condition.PiecesPerCycle" min="1" />
                                                 <span class="input-group-append">
                                                     <button type="submit" class="btn btn-info btn-flat">
@@ -139,7 +130,7 @@
                                         </form>
                                     </td>
                                     <td>
-                                        <a href="@Url.Action("Delete", new { lineCode = condition.LineCode, itemCode = condition.ItemCode })" class="btn btn-danger btn-sm" onclick="return confirm('削除してもよろしいですか？')">
+                                        <a href="@Url.Action("Delete", new { lineCode = condition.LineCode, itemCode = condition.ItemCode })" class="btn btn-danger btn-sm" onclick="return confirm('削除してよろしいですか？')">
                                             <i class="fas fa-trash"></i> 削除
                                         </a>
                                     </td>
@@ -149,11 +140,12 @@
                         else
                         {
                             <tr>
-                                <td colspan="7" class="text-center text-muted">検索条件に合致するデータがありません</td>
+                                <td colspan="8" class="text-center text-muted">表示対象のデータがありません</td>
                             </tr>
                         }
                     </tbody>
                 </table>
+
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <form method="get" class="form-inline">
                         <input type="hidden" name="searchLineCode" value="@searchLineCode" />
@@ -168,15 +160,11 @@
                             }
                         </select>
                     </form>
-                    <div class="text-muted">@totalCount 件中 @(((currentPage - 1) * pageSize) + (Model.Any() ? 1 : 0)) - @(Math.Min(currentPage * pageSize, totalCount)) 件を表示</div>
+                    <div class="text-muted text-sm">@totalCount 件中 @(((currentPage - 1) * pageSize) + (Model.Any() ? 1 : 0)) - @(Math.Min(currentPage * pageSize, totalCount)) 件を表示</div>
                     <ul class="pagination pagination-sm m-0">
-                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
-                            <a class="page-link" href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a>
-                        </li>
+                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a></li>
                         <li class="page-item disabled"><span class="page-link">@currentPage / @totalPages</span></li>
-                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
-                            <a class="page-link" href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a>
-                        </li>
+                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a></li>
                     </ul>
                 </div>
             </div>

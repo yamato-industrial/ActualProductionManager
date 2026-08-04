@@ -1,7 +1,7 @@
 @model List<ActualProductionManager.Controllers.SetupTimeViewModel>
 
 @{
-    ViewData["Title"] = "段取り時間管理";
+    ViewData["Title"] = "段取り時間";
     var searchLineCode = ViewData["SearchLineCode"]?.ToString();
     var searchItemCode = ViewData["SearchItemCode"]?.ToString();
     var sortBy = ViewData["SortBy"]?.ToString() ?? "lineCode";
@@ -19,7 +19,7 @@
             <div class="card-header">
                 <h3 class="card-title">段取り時間一覧</h3>
                 <div class="card-tools">
-                    <a href="#" class="btn btn-primary btn-sm">
+                    <a href="@Url.Action("Create")" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus"></i> 新規登録
                     </a>
                 </div>
@@ -86,15 +86,7 @@
                                     }
                                 </a>
                             </th>
-                            <th>
-                                <a href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy = "targetSetupTime", sortOrder = (sortBy == "targetSetupTime" && sortOrder == "asc") ? "desc" : "asc" })">
-                                    目標段取り時間
-                                    @if (sortBy == "targetSetupTime")
-                                    {
-                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
-                                    }
-                                </a>
-                            </th>
+                            <th>目標段取り時間（分）</th>
                             <th>操作</th>
                         </tr>
                     </thead>

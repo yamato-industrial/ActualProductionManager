@@ -1,4 +1,5 @@
 using ActualProductionManager.Data;
+using ActualProductionManager.Models.Databases;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,12 +33,12 @@ namespace ActualProductionManager.Controllers
                 // フィルタ処理
                 if (!string.IsNullOrEmpty(searchLineCode))
                 {
-                    query = query.Where(c => c.LineCode.Contains(searchLineCode));
+                    query = query.Where(c => c.LineCode.Contains(searchLineCode, StringComparison.OrdinalIgnoreCase));
                 }
 
                 if (!string.IsNullOrEmpty(searchItemCode))
                 {
-                    query = query.Where(c => c.ItemCode.Contains(searchItemCode));
+                    query = query.Where(c => c.ItemCode.Contains(searchItemCode, StringComparison.OrdinalIgnoreCase));
                 }
 
                 // ソート処理
@@ -139,22 +140,14 @@ namespace ActualProductionManager.Controllers
                         ItemName = item.Name
                     };
 
-                _logger.LogInformation(query.ToQueryString());
-
-                _logger.LogInformation("Count開始");
-
                 var totalCount = await query.CountAsync();
                 var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
                 page = Math.Min(page, totalPages);
-
-                _logger.LogInformation("Count終了 {Time} ms", sw.ElapsedMilliseconds);
 
                 var viewModels = await query
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
-
-                _logger.LogInformation("一覧取得終了 {Time} ms", sw.ElapsedMilliseconds);
 
                 ViewData["PageSize"] = pageSize;
                 ViewData["Page"] = page;
@@ -236,6 +229,159 @@ namespace ActualProductionManager.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetLines(string search = "")
+        {
+            try
+            {
+                _logger.LogInformation("GetLines: search parameter = '{Search}'", search);
+
+                // まずすべてのデータを取得
+                var lines = await _context.Lines.ToListAsync();
+
+                // クライアント側でフィルタリング
+                if (!string.IsNullOrEmpty(search))
+                {
+                    lines = [.. lines.Where(l => l.Code.Contains(search, StringComparison.OrdinalIgnoreCase) || l.Name.Contains(search, StringComparison.OrdinalIgnoreCase))];
+                }
+
+                var result = lines
+                    .Select(l => new { id = l.Code, text = $"{l.Code} - {l.Name}" })
+                    .OrderBy(l => l.id)
+                    .ToList();
+
+                _logger.LogInformation("GetLines: returning {Count} results", result.Count);
+
+                return Json(new { results = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ラインデータ取得エラー");
+                return Json(new { results = new List<object>(), error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetLineName(string code)
+        {
+            try
+            {
+                var line = await _context.Lines.FirstOrDefaultAsync(l => l.Code == code);
+                if (line == null)
+                {
+                    return Json(new { name = string.Empty });
+                }
+
+                return Json(new { name = line.Name });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ライン名取得エラー: {Code}", code);
+                return Json(new { name = string.Empty, error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetItems(string search = "")
+        {
+            try
+            {
+                _logger.LogInformation("GetItems: search parameter = '{Search}'", search);
+
+                // まずすべてのデータを取得
+                var items = await _context.Items.ToListAsync();
+
+                // クライアント側でフィルタリング
+                if (!string.IsNullOrEmpty(search))
+                {
+                    items = [.. items.Where(i => i.Code.Contains(search, StringComparison.OrdinalIgnoreCase) || i.Name.Contains(search, StringComparison.OrdinalIgnoreCase))];
+                }
+
+                var result = items
+                    .Select(i => new { id = i.Code, text = $"{i.Code} - {i.Name}" })
+                    .OrderBy(i => i.id)
+                    .ToList();
+
+                _logger.LogInformation("GetItems: returning {Count} results", result.Count);
+
+                return Json(new { results = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "品目データ取得エラー");
+                return Json(new { results = new List<object>(), error = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetItemName(string code)
+        {
+            try
+            {
+                var item = await _context.Items.FirstOrDefaultAsync(i => i.Code == code);
+                if (item == null)
+                {
+                    return Json(new { name = string.Empty });
+                }
+
+                return Json(new { name = item.Name });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "品目名取得エラー: {Code}", code);
+                return Json(new { name = string.Empty, error = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Store(
+            string lineCode,
+            string itemCode,
+            int targetCycleTime,
+            int piecesPerCycle)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(lineCode) || string.IsNullOrEmpty(itemCode))
+                {
+                    TempData["ErrorMessage"] = "ラインコードと品目コードは必須です";
+                    return RedirectToAction(nameof(Create));
+                }
+
+                var existingCondition = await _context.ProductionConditions
+                    .FirstOrDefaultAsync(c => c.LineCode == lineCode && c.ItemCode == itemCode);
+
+                if (existingCondition != null)
+                {
+                    TempData["ErrorMessage"] = "このラインコードと品目コードの組み合わせは既に登録されています";
+                    return RedirectToAction(nameof(Create));
+                }
+
+                var condition = new ProductionCondition
+                {
+                    LineCode = lineCode,
+                    ItemCode = itemCode,
+                    TargetCycleTime = targetCycleTime,
+                    PiecesPerCycle = piecesPerCycle,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.ProductionConditions.Add(condition);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("生産条件を登録しました: {LineCode}-{ItemCode}", lineCode, itemCode);
+                TempData["SuccessMessage"] = "登録しました。";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "生産条件登録エラー");
+                TempData["ErrorMessage"] = $"登録エラー: {ex.Message}";
+                return RedirectToAction(nameof(Create));
+            }
         }
     }
 

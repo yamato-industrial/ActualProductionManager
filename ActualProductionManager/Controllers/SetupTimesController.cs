@@ -83,7 +83,8 @@ namespace ActualProductionManager.Controllers
                     LineName = lineNames.GetValueOrDefault(s.LineCode, s.LineCode),
                     ItemCode = s.ItemCode,
                     ItemName = itemNames.GetValueOrDefault(s.ItemCode, s.ItemCode),
-                    TargetSetupTime = s.TargetSetupTime
+                    TargetSetupTimeSeconds = s.TargetSetupTime,
+                    TargetSetupTimeMinutes = s.TargetSetupTime / 60
                 }).ToList();
 
                 ViewData["SearchLineCode"] = searchLineCode;
@@ -165,7 +166,7 @@ namespace ActualProductionManager.Controllers
         public async Task<IActionResult> Update(
             string lineCode,
             string itemCode,
-            int targetSetupTime)
+            int targetSetupTimeMinutes)
         {
             try
             {
@@ -179,13 +180,14 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                setupTime.TargetSetupTime = targetSetupTime;
+                // 分を秒に変換してデータベースに保存
+                setupTime.TargetSetupTime = targetSetupTimeMinutes * 60;
                 setupTime.UpdatedAt = DateTime.UtcNow;
 
                 _context.SetupTimes.Update(setupTime);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("段取り時間を更新しました: {LineCode}-{ItemCode}", lineCode, itemCode);
+                _logger.LogInformation("段取り時間を更新しました: {LineCode}-{ItemCode} ({Minutes}分)", lineCode, itemCode, targetSetupTimeMinutes);
                 TempData["SuccessMessage"] = "更新しました。";
             }
             catch (Exception ex)
@@ -334,7 +336,7 @@ namespace ActualProductionManager.Controllers
         public async Task<IActionResult> Store(
             string lineCode,
             string itemCode,
-            int targetSetupTime)
+            int targetSetupTimeMinutes)
         {
             try
             {
@@ -353,11 +355,12 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Create));
                 }
 
+                // 分を秒に変換してデータベースに保存
                 var setupTime = new SetupTime
                 {
                     LineCode = lineCode,
                     ItemCode = itemCode,
-                    TargetSetupTime = targetSetupTime,
+                    TargetSetupTime = targetSetupTimeMinutes * 60,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
@@ -365,7 +368,7 @@ namespace ActualProductionManager.Controllers
                 _context.SetupTimes.Add(setupTime);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("段取り時間を登録しました: {LineCode}-{ItemCode}", lineCode, itemCode);
+                _logger.LogInformation("段取り時間を登録しました: {LineCode}-{ItemCode} ({Minutes}分)", lineCode, itemCode, targetSetupTimeMinutes);
                 TempData["SuccessMessage"] = "登録しました。";
                 return RedirectToAction(nameof(Index));
             }
@@ -392,6 +395,7 @@ namespace ActualProductionManager.Controllers
         public string LineName { get; set; } = string.Empty;
         public string ItemCode { get; set; } = string.Empty;
         public string ItemName { get; set; } = string.Empty;
-        public int TargetSetupTime { get; set; }
+        public int TargetSetupTimeSeconds { get; set; }
+        public int TargetSetupTimeMinutes { get; set; }
     }
 }

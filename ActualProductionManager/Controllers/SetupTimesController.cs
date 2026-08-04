@@ -379,6 +379,149 @@ namespace ActualProductionManager.Controllers
                 return RedirectToAction(nameof(Create));
             }
         }
+
+        [HttpGet]
+        public IActionResult Import()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ImportFile(IFormFile csvFile, string importMode = "upsert")
+        {
+            try
+            {
+                if (csvFile == null || csvFile.Length == 0)
+                {
+                    TempData["ErrorMessage"] = "CSVファイルを選択してください";
+                    return RedirectToAction(nameof(Import));
+                }
+
+                if (!csvFile.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    TempData["ErrorMessage"] = "CSVファイルのみアップロード可能です";
+                    return RedirectToAction(nameof(Import));
+                }
+
+                var importedRecords = new List<(string LineCode, string ItemCode, int Minutes)>();
+                var errors = new List<string>();
+
+                using (var stream = new StreamReader(csvFile.OpenReadStream()))
+                {
+                    int lineNumber = 0;
+                    while (!stream.EndOfStream)
+                    {
+                        lineNumber++;
+                        var line = await stream.ReadLineAsync();
+
+                        if (string.IsNullOrWhiteSpace(line))
+                            continue;
+
+                        var columns = line.Split(',');
+
+                        if (columns.Length != 3)
+                        {
+                            errors.Add($"{lineNumber}行目: 列の数が正しくありません（3列必須）");
+                            continue;
+                        }
+
+                        var lineCode = columns[0].Trim();
+                        var itemCode = columns[1].Trim();
+
+                        if (!int.TryParse(columns[2].Trim(), out var minutes) || minutes <= 0)
+                        {
+                            errors.Add($"{lineNumber}行目: 目標段取り時間(秒)は0より大きい正の整数で指定してください");
+                            continue;
+                        }
+
+                        // ラインコードと品目コードが存在するか確認
+                        var lineExists = await _context.Lines.AnyAsync(l => l.Code == lineCode);
+                        var itemExists = await _context.Items.AnyAsync(i => i.Code == itemCode);
+
+                        if (!lineExists)
+                        {
+                            errors.Add($"{lineNumber}行目: ラインコード '{lineCode}' が見つかりません");
+                            continue;
+                        }
+
+                        if (!itemExists)
+                        {
+                            errors.Add($"{lineNumber}行目: 品目コード '{itemCode}' が見つかりません");
+                            continue;
+                        }
+
+                        importedRecords.Add((lineCode, itemCode, minutes));
+                    }
+                }
+
+                if (errors.Count != 0)
+                {
+                    TempData["ErrorMessage"] = $"CSVファイルにエラーがあります：<br>{string.Join("<br>", errors.Take(10))}";
+                    if (errors.Count > 10)
+                        TempData["ErrorMessage"] += $"<br>他 {errors.Count - 10} 件のエラーがあります";
+                    return RedirectToAction(nameof(Import));
+                }
+
+                if (importedRecords.Count == 0)
+                {
+                    TempData["ErrorMessage"] = "有効なデータが1行も見つかりませんでした";
+                    return RedirectToAction(nameof(Import));
+                }
+
+                // データベースに取込
+                if (importMode == "replace")
+                {
+                    // 既存データを削除
+                    var existingSetupTimes = await _context.SetupTimes.ToListAsync();
+                    _context.SetupTimes.RemoveRange(existingSetupTimes);
+                    await _context.SaveChangesAsync();
+                }
+
+                int insertCount = 0;
+                int updateCount = 0;
+
+                foreach (var (lineCode, itemCode, minutes) in importedRecords)
+                {
+                    var existing = await _context.SetupTimes
+                        .FirstOrDefaultAsync(s => s.LineCode == lineCode && s.ItemCode == itemCode);
+
+                    if (existing != null)
+                    {
+                        existing.TargetSetupTime = minutes * 60;
+                        existing.UpdatedAt = DateTime.UtcNow;
+                        _context.SetupTimes.Update(existing);
+                        updateCount++;
+                    }
+                    else
+                    {
+                        var newSetupTime = new SetupTime
+                        {
+                            LineCode = lineCode,
+                            ItemCode = itemCode,
+                            TargetSetupTime = minutes * 60,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        _context.SetupTimes.Add(newSetupTime);
+                        insertCount++;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                var successMessage = $"取込完了しました。追加: {insertCount}件、更新: {updateCount}件";
+                _logger.LogInformation(successMessage);
+                TempData["SuccessMessage"] = successMessage;
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CSV取込エラー");
+                TempData["ErrorMessage"] = $"取込処理中にエラーが発生しました: {ex.Message}";
+                return RedirectToAction(nameof(Import));
+            }
+        }
     }
 
     public class SetupTimeRegistrationViewModel

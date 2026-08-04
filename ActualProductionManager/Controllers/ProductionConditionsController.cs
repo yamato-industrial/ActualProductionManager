@@ -383,6 +383,157 @@ namespace ActualProductionManager.Controllers
                 return RedirectToAction(nameof(Create));
             }
         }
+
+        [HttpGet]
+        public IActionResult Import()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ImportFile(IFormFile csvFile, string importMode = "upsert")
+        {
+            try
+            {
+                if (csvFile == null || csvFile.Length == 0)
+                {
+                    TempData["ErrorMessage"] = "CSVファイルを選択してください";
+                    return RedirectToAction(nameof(Import));
+                }
+
+                if (!csvFile.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                {
+                    TempData["ErrorMessage"] = "CSVファイルのみアップロード可能です";
+                    return RedirectToAction(nameof(Import));
+                }
+
+                var importedRecords = new List<(string LineCode, string ItemCode, int TargetCycleTime, int PiecesPerCycle)>();
+                var errors = new List<string>();
+
+                using (var stream = new StreamReader(csvFile.OpenReadStream()))
+                {
+                    int lineNumber = 0;
+                    while (!stream.EndOfStream)
+                    {
+                        lineNumber++;
+                        var line = await stream.ReadLineAsync();
+
+                        if (string.IsNullOrWhiteSpace(line))
+                            continue;
+
+                        var columns = line.Split(',');
+
+                        if (columns.Length != 4)
+                        {
+                            errors.Add($"{lineNumber}行目: 列の数が正しくありません（4列必須）");
+                            continue;
+                        }
+
+                        var lineCode = columns[0].Trim();
+                        var itemCode = columns[1].Trim();
+
+                        if (!int.TryParse(columns[2].Trim(), out var targetCycleTime) || targetCycleTime <= 0)
+                        {
+                            errors.Add($"{lineNumber}行目: 目標サイクルタイムは0より大きい正の整数で指定してください");
+                            continue;
+                        }
+
+                        if (!int.TryParse(columns[3].Trim(), out var piecesPerCycle) || piecesPerCycle <= 0)
+                        {
+                            errors.Add($"{lineNumber}行目: サイクルあたりの個数は0より大きい正の整数で指定してください");
+                            continue;
+                        }
+
+                        // ラインコードと品目コードが存在するか確認
+                        var lineExists = await _context.Lines.AnyAsync(l => l.Code == lineCode);
+                        var itemExists = await _context.Items.AnyAsync(i => i.Code == itemCode);
+
+                        if (!lineExists)
+                        {
+                            errors.Add($"{lineNumber}行目: ラインコード '{lineCode}' が見つかりません");
+                            continue;
+                        }
+
+                        if (!itemExists)
+                        {
+                            errors.Add($"{lineNumber}行目: 品目コード '{itemCode}' が見つかりません");
+                            continue;
+                        }
+
+                        importedRecords.Add((lineCode, itemCode, targetCycleTime, piecesPerCycle));
+                    }
+                }
+
+                if (errors.Any())
+                {
+                    TempData["ErrorMessage"] = $"CSVファイルにエラーがあります：<br>{string.Join("<br>", errors.Take(10))}";
+                    if (errors.Count > 10)
+                        TempData["ErrorMessage"] += $"<br>他 {errors.Count - 10} 件のエラーがあります";
+                    return RedirectToAction(nameof(Import));
+                }
+
+                if (!importedRecords.Any())
+                {
+                    TempData["ErrorMessage"] = "有効なデータが1行も見つかりませんでした";
+                    return RedirectToAction(nameof(Import));
+                }
+
+                // データベースに取込
+                if (importMode == "replace")
+                {
+                    // 既存データを削除
+                    var existingConditions = await _context.ProductionConditions.ToListAsync();
+                    _context.ProductionConditions.RemoveRange(existingConditions);
+                    await _context.SaveChangesAsync();
+                }
+
+                int insertCount = 0;
+                int updateCount = 0;
+
+                foreach (var (lineCode, itemCode, targetCycleTime, piecesPerCycle) in importedRecords)
+                {
+                    var existing = await _context.ProductionConditions
+                        .FirstOrDefaultAsync(c => c.LineCode == lineCode && c.ItemCode == itemCode);
+
+                    if (existing != null)
+                    {
+                        existing.TargetCycleTime = targetCycleTime;
+                        existing.PiecesPerCycle = piecesPerCycle;
+                        existing.UpdatedAt = DateTime.UtcNow;
+                        _context.ProductionConditions.Update(existing);
+                        updateCount++;
+                    }
+                    else
+                    {
+                        var newCondition = new ProductionCondition
+                        {
+                            LineCode = lineCode,
+                            ItemCode = itemCode,
+                            TargetCycleTime = targetCycleTime,
+                            PiecesPerCycle = piecesPerCycle,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        _context.ProductionConditions.Add(newCondition);
+                        insertCount++;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                var successMessage = $"取込完了しました。追加: {insertCount}件、更新: {updateCount}件";
+                _logger.LogInformation(successMessage);
+                TempData["SuccessMessage"] = successMessage;
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CSV取込エラー");
+                TempData["ErrorMessage"] = $"取込処理中にエラーが発生しました: {ex.Message}";
+                return RedirectToAction(nameof(Import));
+            }
+        }
     }
 
     public class ProductionConditionRegistrationViewModel

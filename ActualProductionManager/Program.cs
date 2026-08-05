@@ -1,6 +1,22 @@
+using ActualProductionManager.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+
+// DbContext ‚ð DI ƒRƒ“ƒeƒi‚É“o˜^
+builder.Services.AddDbContext<ActualProductionContext>((serviceProvider, options) =>
+{
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    var connectionString = configuration["Database:ConnectionString"];
+    var schema = configuration["Database:Schema"];
+
+    options.UseNpgsql(connectionString, postgresqlOptions =>
+    {
+        postgresqlOptions.SetPostgresVersion(14, 2);
+    });
+});
 
 var app = builder.Build();
 

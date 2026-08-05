@@ -1,0 +1,154 @@
+﻿@model List<ActualProductionManager.Controllers.ProductionConditionRegistrationViewModel>
+
+@{
+    ViewData["Title"] = "生産条件 - 新規登録";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">生産条件新規登録</h3>
+            </div>
+            <form id="registrationForm" method="post" action="@Url.Action("Store", "ProductionConditions")">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="lineCode">ラインコード <span class="text-danger">*</span></label>
+                        <select id="lineCode" name="lineCode" class="form-control" style="width: 100%;" required>
+                            <option value="">選択してください</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lineName">ライン名</label>
+                        <input type="text" id="lineName" name="lineName" class="form-control" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="itemCode">品目コード <span class="text-danger">*</span></label>
+                        <select id="itemCode" name="itemCode" class="form-control" style="width: 100%;" required>
+                            <option value="">選択してください</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="itemName">品目名</label>
+                        <input type="text" id="itemName" name="itemName" class="form-control" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="targetCycleTime">目標サイクルタイム(秒) <span class="text-danger">*</span></label>
+                        <input type="number" id="targetCycleTime" name="targetCycleTime" class="form-control" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="piecesPerCycle">サイクルあたりの個数 <span class="text-danger">*</span></label>
+                        <input type="number" id="piecesPerCycle" name="piecesPerCycle" class="form-control" min="1" required>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">登録</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">キャンセル</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // ラインコード Select2初期化
+            $('#lineCode').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'ラインコードを選択してください',
+                allowClear: true,
+                ajax: {
+                    url: '@Url.Action("GetLines", "ProductionConditions")',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            search: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.results
+                        };
+                    },
+                    cache: true
+                },
+                minimumInputLength: 0
+            });
+
+            // 品目コード Select2初期化
+            $('#itemCode').select2({
+                theme: 'bootstrap-5',
+                placeholder: '品目コードを選択してください',
+                allowClear: true,
+                ajax: {
+                    url: '@Url.Action("GetItems", "ProductionConditions")',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            search: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: data.results
+                        };
+                    },
+                    cache: true
+                },
+                minimumInputLength: 0
+            });
+
+            // ラインコード変更時：ライン名を自動入力
+            $('#lineCode').on('change', function () {
+                var code = $(this).val();
+                if (code) {
+                    $.ajax({
+                        url: '@Url.Action("GetLineName", "ProductionConditions")',
+                        type: 'GET',
+                        data: { code: code },
+                        success: function (data) {
+                            $('#lineName').val(data.name);
+                        },
+                        error: function () {
+                            $('#lineName').val('');
+                        }
+                    });
+                } else {
+                    $('#lineName').val('');
+                }
+            });
+
+            // 品目コード変更時：品目名を自動入力
+            $('#itemCode').on('change', function () {
+                var code = $(this).val();
+                if (code) {
+                    $.ajax({
+                        url: '@Url.Action("GetItemName", "ProductionConditions")',
+                        type: 'GET',
+                        data: { code: code },
+                        success: function (data) {
+                            $('#itemName').val(data.name);
+                        },
+                        error: function () {
+                            $('#itemName').val('');
+                        }
+                    });
+                } else {
+                    $('#itemName').val('');
+                }
+            });
+
+            // フォーム送信時の検証
+            $('#registrationForm').on('submit', function (e) {
+                if (!$('#lineCode').val() || !$('#itemCode').val() || !$('#targetCycleTime').val() || !$('#piecesPerCycle').val()) {
+                    e.preventDefault();
+                    alert('必須項目をすべて入力してください');
+                    return false;
+                }
+            });
+        });
+    </script>
+}

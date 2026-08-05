@@ -1,0 +1,99 @@
+@{
+    ViewData["Title"] = "段取り時間 CSV取込";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">CSV取込</h3>
+            </div>
+
+            <div class="card-body">
+                <!-- CSVフォーマット説明 -->
+                <div class="mb-4">
+                    <h5 class="mb-3">
+                        <i class="fas fa-file-csv text-success"></i>
+                        CSVファイルの形式
+                    </h5>
+
+                    <div class="bg-light border-left border-4 border-success p-3 mb-3">
+                        <div class="font-monospace text-dark">
+                            ラインコード,品目コード,目標段取り時間(分)
+                        </div>
+                    </div>
+
+                    <h6 class="mb-2">例：</h6>
+                    <div class="bg-white border border-secondary rounded p-3">
+                        <div class="font-monospace text-dark">
+                            LINE001,ITEM001,30<br>
+                            LINE001,ITEM002,45<br>
+                            LINE002,ITEM001,25
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <form asp-controller="SetupTimes" asp-action="ImportFile" method="post" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="csvFile">CSVファイルを選択</label>
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="csvFile" name="csvFile" accept=".csv" required>
+                            <label class="custom-file-label" for="csvFile">ファイルを選択...</label>
+                        </div>
+                        <small class="form-text text-muted">*.csv形式のファイルのみ対応しています</small>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-radio">
+                            <input type="radio" id="modeUpsert" class="custom-control-input" name="importMode" value="upsert" checked>
+                            <label class="custom-control-label" for="modeUpsert">
+                                既存データを更新（既に登録されているラインコード＆品目コードは更新、新規は追加）
+                            </label>
+                        </div>
+                        <div class="custom-control custom-radio">
+                            <input type="radio" id="modeReplace" class="custom-control-input" name="importMode" value="replace">
+                            <label class="custom-control-label" for="modeReplace">
+                                置き換え（既存データをすべて削除し、CSVファイルのデータで置き換え）
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> 取込を開始
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> キャンセル
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-header">
+                <h3 class="card-title">注意事項</h3>
+            </div>
+            <div class="card-body">
+                <ul class="small">
+                    <li>ファイルは UTF-8 エンコーディングで保存してください</li>
+                    <li>ヘッダー行は含めないでください</li>
+                    <li>ラインコードと品目コードは既存のマスタに登録されている必要があります</li>
+                    <li>目標段取り時間は0より大きい正の整数を指定してください</li>
+                    <li>エラーが発生した場合、データは保存されません</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('csvFile').addEventListener('change', function (e) {
+        var fileName = e.target.files[0]?.name || 'ファイルを選択...';
+        document.querySelector('.custom-file-label').textContent = fileName;
+    });
+</script>

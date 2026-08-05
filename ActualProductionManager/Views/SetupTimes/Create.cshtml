@@ -1,0 +1,158 @@
+﻿@model List<ActualProductionManager.Controllers.SetupTimeRegistrationViewModel>
+
+@{
+    ViewData["Title"] = "段取り時間 - 新規登録";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">段取り時間新規登録</h3>
+            </div>
+            <form id="registrationForm" method="post" action="@Url.Action("Store", "SetupTimes")">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="lineCode">ラインコード <span class="text-danger">*</span></label>
+                        <select id="lineCode" name="lineCode" class="form-control" style="width: 100%;" required>
+                            <option value="">選択してください</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lineName">ライン名</label>
+                        <input type="text" id="lineName" name="lineName" class="form-control" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="itemCode">品目コード <span class="text-danger">*</span></label>
+                        <select id="itemCode" name="itemCode" class="form-control" style="width: 100%;" required>
+                            <option value="">選択してください</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="itemName">品目名</label>
+                        <input type="text" id="itemName" name="itemName" class="form-control" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="targetSetupTime">目標段取り時間(分) <span class="text-danger">*</span></label>
+                        <input type="number" id="targetSetupTime" name="targetSetupTime" class="form-control" min="0" required>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">登録</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">キャンセル</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // ラインコード Select2初期化
+            $('#lineCode').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'ラインコードを選択してください',
+                allowClear: true,
+                ajax: {
+                    url: '@Url.Action("GetLines", "SetupTimes")',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        console.log('Sending search term:', params.term);
+                        return {
+                            search: params.term || ''
+                        };
+                    },
+                    processResults: function (data) {
+                        console.log('GetLines response:', data);
+                        return {
+                            results: data.results || []
+                        };
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('GetLines AJAX error:', status, error, xhr.responseText);
+                    }
+                },
+                minimumInputLength: 0
+            });
+
+            // 品目コード Select2初期化
+            $('#itemCode').select2({
+                theme: 'bootstrap-5',
+                placeholder: '品目コードを選択してください',
+                allowClear: true,
+                ajax: {
+                    url: '@Url.Action("GetItems", "SetupTimes")',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        console.log('Sending search term:', params.term);
+                        return {
+                            search: params.term || ''
+                        };
+                    },
+                    processResults: function (data) {
+                        console.log('GetItems response:', data);
+                        return {
+                            results: data.results || []
+                        };
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('GetItems AJAX error:', status, error, xhr.responseText);
+                    }
+                },
+                minimumInputLength: 0
+            });
+
+            // ラインコード変更時：ライン名を自動入力
+            $('#lineCode').on('change', function () {
+                var code = $(this).val();
+                if (code) {
+                    $.ajax({
+                        url: '@Url.Action("GetLineName", "SetupTimes")',
+                        type: 'GET',
+                        data: { code: code },
+                        success: function (data) {
+                            $('#lineName').val(data.name || '');
+                        },
+                        error: function () {
+                            $('#lineName').val('');
+                        }
+                    });
+                } else {
+                    $('#lineName').val('');
+                }
+            });
+
+            // 品目コード変更時：品目名を自動入力
+            $('#itemCode').on('change', function () {
+                var code = $(this).val();
+                if (code) {
+                    $.ajax({
+                        url: '@Url.Action("GetItemName", "SetupTimes")',
+                        type: 'GET',
+                        data: { code: code },
+                        success: function (data) {
+                            $('#itemName').val(data.name || '');
+                        },
+                        error: function () {
+                            $('#itemName').val('');
+                        }
+                    });
+                } else {
+                    $('#itemName').val('');
+                }
+            });
+
+            // フォーム送信時の検証
+            $('#registrationForm').on('submit', function (e) {
+                if (!$('#lineCode').val() || !$('#itemCode').val() || !$('#targetSetupTime').val()) {
+                    e.preventDefault();
+                    alert('必須項目をすべて入力してください');
+                    return false;
+                }
+            });
+        });
+    </script>
+}

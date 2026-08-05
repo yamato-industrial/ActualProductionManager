@@ -5,11 +5,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ActualProductionManager.Controllers
 {
+    /// <summary>
+    /// 段取り時間（セットアップタイム）の管理機能を提供するコントローラー。
+    /// 段取り時間の一覧表示、登録、更新、削除、および CSV インポート機能を実装します。
+    /// </summary>
     public class SetupTimesController : Controller
     {
         private readonly ActualProductionContext _context;
         private readonly ILogger<SetupTimesController> _logger;
 
+        /// <summary>
+        /// SetupTimesController のコンストラクタ。
+        /// </summary>
+        /// <param name="context">データベースコンテキスト。</param>
+        /// <param name="logger">ロギングサービス。</param>
         public SetupTimesController(
             ActualProductionContext context,
             ILogger<SetupTimesController> logger)
@@ -18,6 +27,16 @@ namespace ActualProductionManager.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// 段取り時間データを検索・ソート・ページネーション表示します。
+        /// </summary>
+        /// <param name="searchLineCode">検索用ラインコード。</param>
+        /// <param name="searchItemCode">検索用品目コード。</param>
+        /// <param name="sortBy">ソート対象フィールド。"lineCode" または "targetSetupTime"。</param>
+        /// <param name="sortOrder">ソート順序。"asc" (昇順) または "desc" (降順)。</param>
+        /// <param name="pageSize">1 ページあたりの表示件数。</param>
+        /// <param name="page">表示ページ番号。</param>
+        /// <returns>段取り時間一覧ビュー。</returns>
         public async Task<IActionResult> Index(
             string? searchLineCode,
             string? searchItemCode,
@@ -30,18 +49,19 @@ namespace ActualProductionManager.Controllers
             {
                 var query = _context.SetupTimes.AsQueryable();
 
-                // フィルタ処理
+                // フィルタ処理：ラインコードで検索
                 if (!string.IsNullOrEmpty(searchLineCode))
                 {
                     query = query.Where(s => s.LineCode.Contains(searchLineCode, StringComparison.OrdinalIgnoreCase));
                 }
 
+                // フィルタ処理：品目コードで検索
                 if (!string.IsNullOrEmpty(searchItemCode))
                 {
                     query = query.Where(s => s.ItemCode.Contains(searchItemCode, StringComparison.OrdinalIgnoreCase));
                 }
 
-                // ソート処理
+                // ソート処理：指定されたフィールドと順序でソート
                 query = sortBy switch
                 {
                     "targetSetupTime" => sortOrder == "asc"
@@ -52,6 +72,7 @@ namespace ActualProductionManager.Controllers
                         : query.OrderByDescending(s => s.LineCode).ThenByDescending(s => s.ItemCode),
                 };
 
+                // ページサイズの検証：許可された値のみを受け入れる
                 var allowedPageSizes = new[] { 10, 25, 50, 100 };
                 if (!allowedPageSizes.Contains(pageSize))
                 {
@@ -68,8 +89,11 @@ namespace ActualProductionManager.Controllers
                     .Take(pageSize)
                     .ToListAsync();
 
+                // ラインコードと品目コードを抽出
                 var lineCodes = setupTimes.Select(x => x.LineCode).Distinct().ToList();
                 var itemCodes = setupTimes.Select(x => x.ItemCode).Distinct().ToList();
+
+                // 対応するラインと品目の名前をデータベースから取得してマッピング
                 var lineNames = await _context.Lines
                     .Where(line => lineCodes.Contains(line.Code))
                     .ToDictionaryAsync(line => line.Code, line => line.Name);
@@ -77,6 +101,7 @@ namespace ActualProductionManager.Controllers
                     .Where(item => itemCodes.Contains(item.Code))
                     .ToDictionaryAsync(item => item.Code, item => item.Name);
 
+                // ビューモデルを構築
                 var viewModels = setupTimes.Select(s => new SetupTimeViewModel
                 {
                     LineCode = s.LineCode,
@@ -106,10 +131,17 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// 新規登録可能な段取り時間の候補（未登録のラインコードと品目コードの組み合わせ）を表示します。
+        /// </summary>
+        /// <param name="pageSize">1 ページあたりの表示件数。</param>
+        /// <param name="page">表示ページ番号。</param>
+        /// <returns>登録候補一覧ビュー。</returns>
         public async Task<IActionResult> Create(int pageSize = 10, int page = 1)
         {
             try
             {
+                // ページサイズの検証
                 var allowedPageSizes = new[] { 10, 25, 50, 100 };
                 if (!allowedPageSizes.Contains(pageSize))
                 {
@@ -118,9 +150,11 @@ namespace ActualProductionManager.Controllers
 
                 page = Math.Max(page, 1);
 
+                // 既に登録済みのキーセットを取得
                 var registeredKeys = _context.SetupTimes
                     .Select(x => new { x.LineCode, x.ItemCode });
 
+                // 登録されていないラインと品目の組み合わせを取得
                 var query =
                     from line in _context.Lines
                     from item in _context.Items
@@ -162,6 +196,13 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// 指定されたラインコードと品目コードの段取り時間を更新します。
+        /// </summary>
+        /// <param name="lineCode">ラインコード。</param>
+        /// <param name="itemCode">品目コード。</param>
+        /// <param name="targetSetupTimeMinutes">目標段取り時間（分単位）。</param>
+        /// <returns>一覧ページへのリダイレクト。</returns>
         [HttpPost]
         public async Task<IActionResult> Update(
             string lineCode,
@@ -199,6 +240,12 @@ namespace ActualProductionManager.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        /// <summary>
+        /// 指定されたラインコードと品目コードの段取り時間を削除します。
+        /// </summary>
+        /// <param name="lineCode">ラインコード。</param>
+        /// <param name="itemCode">品目コード。</param>
+        /// <returns>一覧ページへのリダイレクト。</returns>
         public async Task<IActionResult> Delete(string lineCode, string itemCode)
         {
             try
@@ -228,6 +275,12 @@ namespace ActualProductionManager.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        /// <summary>
+        /// ラインデータを検索して JSON 形式で返します。
+        /// 主に AJAX リクエストで使用され、オートコンプリート機能をサポートします。
+        /// </summary>
+        /// <param name="search">検索キーワード（ラインコードまたはライン名）。</param>
+        /// <returns>JSON 形式のラインデータ。</returns>
         [HttpGet]
         public async Task<IActionResult> GetLines(string search = "")
         {
@@ -235,7 +288,7 @@ namespace ActualProductionManager.Controllers
             {
                 _logger.LogInformation("GetLines: search parameter = '{Search}'", search);
 
-                // まずすべてのデータを取得
+                // データベースからすべてのラインデータを取得
                 var lines = await _context.Lines.ToListAsync();
 
                 // クライアント側でフィルタリング
@@ -260,6 +313,11 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// 指定されたラインコードに対応するライン名を取得します。
+        /// </summary>
+        /// <param name="code">ラインコード。</param>
+        /// <returns>JSON 形式のライン名。ラインが見つからない場合は空文字列。</returns>
         [HttpGet]
         public async Task<IActionResult> GetLineName(string code)
         {
@@ -280,6 +338,12 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// 品目データを検索して JSON 形式で返します。
+        /// 主に AJAX リクエストで使用され、オートコンプリート機能をサポートします。
+        /// </summary>
+        /// <param name="search">検索キーワード（品目コードまたは品目名）。</param>
+        /// <returns>JSON 形式の品目データ。</returns>
         [HttpGet]
         public async Task<IActionResult> GetItems(string search = "")
         {
@@ -287,7 +351,7 @@ namespace ActualProductionManager.Controllers
             {
                 _logger.LogInformation("GetItems: search parameter = '{Search}'", search);
 
-                // まずすべてのデータを取得
+                // データベースからすべての品目データを取得
                 var items = await _context.Items.ToListAsync();
 
                 // クライアント側でフィルタリング
@@ -312,6 +376,11 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// 指定された品目コードに対応する品目名を取得します。
+        /// </summary>
+        /// <param name="code">品目コード。</param>
+        /// <returns>JSON 形式の品目名。品目が見つからない場合は空文字列。</returns>
         [HttpGet]
         public async Task<IActionResult> GetItemName(string code)
         {
@@ -332,6 +401,13 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// 新しい段取り時間データをデータベースに登録します。
+        /// </summary>
+        /// <param name="lineCode">ラインコード。</param>
+        /// <param name="itemCode">品目コード。</param>
+        /// <param name="targetSetupTimeMinutes">目標段取り時間（分単位）。</param>
+        /// <returns>登録成功時は一覧ページへ、失敗時は登録画面へリダイレクト。</returns>
         [HttpPost]
         public async Task<IActionResult> Store(
             string lineCode,
@@ -380,12 +456,23 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// CSV ファイルのインポート画面を表示します。
+        /// </summary>
+        /// <returns>インポート画面ビュー。</returns>
         [HttpGet]
         public IActionResult Import()
         {
             return View();
         }
 
+        /// <summary>
+        /// CSV ファイルから段取り時間データをインポートします。
+        /// ファイル形式：ラインコード, 品目コード, 目標段取り時間（分）
+        /// </summary>
+        /// <param name="csvFile">アップロードされた CSV ファイル。</param>
+        /// <param name="importMode">"upsert" (既存データは更新) または "replace" (既存データは削除)。</param>
+        /// <returns>インポート成功時は一覧ページへ、失敗時はインポート画面へリダイレクト。</returns>
         [HttpPost]
         public async Task<IActionResult> ImportFile(IFormFile csvFile, string importMode = "upsert")
         {
@@ -430,7 +517,7 @@ namespace ActualProductionManager.Controllers
 
                         if (!int.TryParse(columns[2].Trim(), out var minutes) || minutes <= 0)
                         {
-                            errors.Add($"{lineNumber}行目: 目標段取り時間(秒)は0より大きい正の整数で指定してください");
+                            errors.Add($"{lineNumber}行目: 目標段取り時間(分)は0より大きい正の整数で指定してください");
                             continue;
                         }
 
@@ -468,10 +555,10 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Import));
                 }
 
-                // データベースに取込
+                // インポートモードに応じてデータベースに取込
                 if (importMode == "replace")
                 {
-                    // 既存データを削除
+                    // replace モード：既存データを削除
                     var existingSetupTimes = await _context.SetupTimes.ToListAsync();
                     _context.SetupTimes.RemoveRange(existingSetupTimes);
                     await _context.SaveChangesAsync();
@@ -524,21 +611,47 @@ namespace ActualProductionManager.Controllers
         }
     }
 
+    /// <summary>
+    /// 段取り時間登録画面で使用するビューモデル。
+    /// 未登録のラインと品目の組み合わせ情報を表示するために使用します。
+    /// </summary>
     public class SetupTimeRegistrationViewModel
     {
+        /// <summary>ラインコード。</summary>
         public string LineCode { get; set; } = string.Empty;
+
+        /// <summary>ラインの表示名。</summary>
         public string LineName { get; set; } = string.Empty;
+
+        /// <summary>品目コード。</summary>
         public string ItemCode { get; set; } = string.Empty;
+
+        /// <summary>品目の表示名。</summary>
         public string ItemName { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// 段取り時間一覧画面で使用するビューモデル。
+    /// 登録済みの段取り時間情報を表示するために使用します。
+    /// </summary>
     public class SetupTimeViewModel
     {
+        /// <summary>ラインコード。</summary>
         public string LineCode { get; set; } = string.Empty;
+
+        /// <summary>ラインの表示名。</summary>
         public string LineName { get; set; } = string.Empty;
+
+        /// <summary>品目コード。</summary>
         public string ItemCode { get; set; } = string.Empty;
+
+        /// <summary>品目の表示名。</summary>
         public string ItemName { get; set; } = string.Empty;
+
+        /// <summary>目標段取り時間（秒単位）。</summary>
         public int TargetSetupTimeSeconds { get; set; }
+
+        /// <summary>目標段取り時間（分単位）。</summary>
         public int TargetSetupTimeMinutes { get; set; }
     }
 }

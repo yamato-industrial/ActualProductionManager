@@ -464,7 +464,7 @@ namespace ActualProductionManager.Controllers
                     }
                 }
 
-                if (errors.Any())
+                if (errors.Count != 0)
                 {
                     TempData["ErrorMessage"] = $"CSVファイルにエラーがあります：<br>{string.Join("<br>", errors.Take(10))}";
                     if (errors.Count > 10)
@@ -472,7 +472,7 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Import));
                 }
 
-                if (!importedRecords.Any())
+                if (importedRecords.Count == 0)
                 {
                     TempData["ErrorMessage"] = "有効なデータが1行も見つかりませんでした";
                     return RedirectToAction(nameof(Import));

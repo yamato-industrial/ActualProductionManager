@@ -5,8 +5,14 @@ namespace ActualProductionManager.Data;
 
 public partial class ActualProductionContext : DbContext
 {
-    public ActualProductionContext(DbContextOptions<ActualProductionContext> options) : base(options)
+    private readonly IConfiguration _configuration;
+
+    private string Schema => _configuration["Database:Schema"] ?? "dev";
+
+    public ActualProductionContext(DbContextOptions<ActualProductionContext> options, IConfiguration configuration)
+        : base(options)
     {
+        _configuration = configuration;
     }
 
     public virtual DbSet<Item> Items { get; set; }
@@ -17,14 +23,14 @@ public partial class ActualProductionContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
-            .HasPostgresExtension("dev", "postgres_fdw")
-            .HasPostgresExtension("dev", "tablefunc");
+            .HasPostgresExtension(Schema, "postgres_fdw")
+            .HasPostgresExtension(Schema, "tablefunc");
 
         modelBuilder.Entity<Item>(entity =>
         {
             entity
                 .HasNoKey()
-                .ToTable("items", "dev");
+                .ToTable("items", Schema);
 
             entity.Property(e => e.Code).HasColumnName("code");
             entity.Property(e => e.Name).HasColumnName("name");
@@ -34,7 +40,7 @@ public partial class ActualProductionContext : DbContext
         {
             entity
                 .HasNoKey()
-                .ToTable("lines", "dev");
+                .ToTable("lines", Schema);
 
             entity.Property(e => e.Code).HasColumnName("code");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
@@ -46,7 +52,7 @@ public partial class ActualProductionContext : DbContext
         {
             entity.HasKey(e => new { e.LineCode, e.ItemCode }).HasName("pk_production_conditions_01");
 
-            entity.ToTable("production_conditions", "dev");
+            entity.ToTable("production_conditions", Schema);
 
             entity.Property(e => e.LineCode).HasColumnName("line_code");
             entity.Property(e => e.ItemCode).HasColumnName("item_code");
@@ -60,7 +66,7 @@ public partial class ActualProductionContext : DbContext
         {
             entity.HasKey(e => new { e.LineCode, e.ItemCode }).HasName("pk_setup_times_01");
 
-            entity.ToTable("setup_times", "dev");
+            entity.ToTable("setup_times", Schema);
 
             entity.Property(e => e.LineCode).HasColumnName("line_code");
             entity.Property(e => e.ItemCode).HasColumnName("item_code");

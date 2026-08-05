@@ -3,12 +3,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ActualProductionManager.Data;
 
+/// <summary>
+/// 実績生産管理システムのデータベースコンテキストクラス。
+/// PostgreSQLデータベースとの接続を管理し、各テーブルエンティティへのアクセスを提供します。
+/// </summary>
 public partial class ActualProductionContext : DbContext
 {
     private readonly IConfiguration _configuration;
 
     private string Schema => _configuration["Database:Schema"] ?? "dev";
 
+    /// <summary>
+    /// ActualProductionContextのコンストラクタ。
+    /// </summary>
+    /// <param name="options">DbContext オプション。</param>
+    /// <param name="configuration">アプリケーション設定インターフェース。</param>
     public ActualProductionContext(DbContextOptions<ActualProductionContext> options, IConfiguration configuration)
         : base(options)
     {
@@ -20,6 +29,10 @@ public partial class ActualProductionContext : DbContext
     public virtual DbSet<ProductionCondition> ProductionConditions { get; set; }
     public virtual DbSet<SetupTime> SetupTimes { get; set; }
 
+    /// <summary>
+    /// データベースモデルの構成を定義します。各エンティティのテーブル名、カラム名、主キー、外部キーなどをマッピングします。
+    /// </summary>
+    /// <param name="modelBuilder">モデルビルダーインスタンス。</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
@@ -78,5 +91,9 @@ public partial class ActualProductionContext : DbContext
         OnModelCreatingPartial(modelBuilder);
     }
 
+    /// <summary>
+    /// モデル作成処理の部分メソッド。追加のカスタム設定が必要な場合はこのメソッドを実装します。
+    /// </summary>
+    /// <param name="modelBuilder">モデルビルダーインスタンス。</param>
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

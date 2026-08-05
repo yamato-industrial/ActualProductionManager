@@ -5,11 +5,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ActualProductionManager.Controllers
 {
+    /// <summary>
+    /// 生産条件（ラインあたりの品目ごとのサイクルタイムと個数設定）の管理機能を提供するコントローラー。
+    /// 生産条件の一覧表示、登録、更新、削除、および CSV インポート機能を実装します。
+    /// </summary>
     public class ProductionConditionsController : Controller
     {
         private readonly ActualProductionContext _context;
         private readonly ILogger<ProductionConditionsController> _logger;
 
+        /// <summary>
+        /// ProductionConditionsController のコンストラクタ。
+        /// </summary>
+        /// <param name="context">データベースコンテキスト。</param>
+        /// <param name="logger">ロギングサービス。</param>
         public ProductionConditionsController(
             ActualProductionContext context,
             ILogger<ProductionConditionsController> logger)
@@ -18,6 +27,16 @@ namespace ActualProductionManager.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// 生産条件データを検索・ソート・ページネーション表示します。
+        /// </summary>
+        /// <param name="searchLineCode">検索用ラインコード。</param>
+        /// <param name="searchItemCode">検索用品目コード。</param>
+        /// <param name="sortBy">ソート対象フィールド。"lineCode" または "targetCycleTime"。</param>
+        /// <param name="sortOrder">ソート順序。"asc" (昇順) または "desc" (降順)。</param>
+        /// <param name="pageSize">1 ページあたりの表示件数。</param>
+        /// <param name="page">表示ページ番号。</param>
+        /// <returns>生産条件一覧ビュー。</returns>
         public async Task<IActionResult> Index(
             string? searchLineCode,
             string? searchItemCode,
@@ -30,18 +49,19 @@ namespace ActualProductionManager.Controllers
             {
                 var query = _context.ProductionConditions.AsQueryable();
 
-                // フィルタ処理
+                // フィルタ処理：ラインコードで検索
                 if (!string.IsNullOrEmpty(searchLineCode))
                 {
                     query = query.Where(c => c.LineCode.Contains(searchLineCode, StringComparison.OrdinalIgnoreCase));
                 }
 
+                // フィルタ処理：品目コードで検索
                 if (!string.IsNullOrEmpty(searchItemCode))
                 {
                     query = query.Where(c => c.ItemCode.Contains(searchItemCode, StringComparison.OrdinalIgnoreCase));
                 }
 
-                // ソート処理
+                // ソート処理：指定されたフィールドと順序でソート
                 query = sortBy switch
                 {
                     "targetCycleTime" => sortOrder == "asc"
@@ -52,6 +72,7 @@ namespace ActualProductionManager.Controllers
                         : query.OrderByDescending(c => c.LineCode).ThenByDescending(c => c.ItemCode),
                 };
 
+                // ページサイズの検証：許可された値のみを受け入れる
                 var allowedPageSizes = new[] { 10, 25, 50, 100 };
                 if (!allowedPageSizes.Contains(pageSize))
                 {
@@ -68,8 +89,11 @@ namespace ActualProductionManager.Controllers
                     .Take(pageSize)
                     .ToListAsync();
 
+                // ラインコードと品目コードを抽出
                 var lineCodes = conditions.Select(x => x.LineCode).Distinct().ToList();
                 var itemCodes = conditions.Select(x => x.ItemCode).Distinct().ToList();
+
+                // 対応するラインと品目の名前をデータベースから取得してマッピング
                 var lineNames = await _context.Lines
                     .Where(line => lineCodes.Contains(line.Code))
                     .ToDictionaryAsync(line => line.Code, line => line.Name);
@@ -77,6 +101,7 @@ namespace ActualProductionManager.Controllers
                     .Where(item => itemCodes.Contains(item.Code))
                     .ToDictionaryAsync(item => item.Code, item => item.Name);
 
+                // ビューモデルを構築
                 var viewModels = conditions.Select(c => new ProductionConditionViewModel
                 {
                     LineCode = c.LineCode,
@@ -106,12 +131,17 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// 新規登録可能な生産条件の候補（未登録のラインコードと品目コードの組み合わせ）を表示します。
+        /// </summary>
+        /// <param name="pageSize">1 ページあたりの表示件数。</param>
+        /// <param name="page">表示ページ番号。</param>
+        /// <returns>登録候補一覧ビュー。</returns>
         public async Task<IActionResult> Create(int pageSize = 10, int page = 1)
         {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-
             try
             {
+                // ページサイズの検証
                 var allowedPageSizes = new[] { 10, 25, 50, 100 };
                 if (!allowedPageSizes.Contains(pageSize))
                 {
@@ -120,9 +150,11 @@ namespace ActualProductionManager.Controllers
 
                 page = Math.Max(page, 1);
 
+                // 既に登録済みのキーセットを取得
                 var registeredKeys = _context.ProductionConditions
                     .Select(x => new { x.LineCode, x.ItemCode });
 
+                // 登録されていないラインと品目の組み合わせを取得
                 var query =
                     from line in _context.Lines
                     from item in _context.Items
@@ -164,6 +196,14 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// 指定されたラインコードと品目コードの生産条件を更新します。
+        /// </summary>
+        /// <param name="lineCode">ラインコード。</param>
+        /// <param name="itemCode">品目コード。</param>
+        /// <param name="targetCycleTime">目標サイクルタイム。</param>
+        /// <param name="piecesPerCycle">サイクルあたりの個数。</param>
+        /// <returns>一覧ページへのリダイレクト。</returns>
         [HttpPost]
         public async Task<IActionResult> Update(
             string lineCode,
@@ -202,6 +242,12 @@ namespace ActualProductionManager.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        /// <summary>
+        /// 指定されたラインコードと品目コードの生産条件を削除します。
+        /// </summary>
+        /// <param name="lineCode">ラインコード。</param>
+        /// <param name="itemCode">品目コード。</param>
+        /// <returns>一覧ページへのリダイレクト。</returns>
         public async Task<IActionResult> Delete(string lineCode, string itemCode)
         {
             try
@@ -231,6 +277,12 @@ namespace ActualProductionManager.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        /// <summary>
+        /// ラインデータを検索して JSON 形式で返します。
+        /// 主に AJAX リクエストで使用され、オートコンプリート機能をサポートします。
+        /// </summary>
+        /// <param name="search">検索キーワード（ラインコードまたはライン名）。</param>
+        /// <returns>JSON 形式のラインデータ。</returns>
         [HttpGet]
         public async Task<IActionResult> GetLines(string search = "")
         {
@@ -238,7 +290,7 @@ namespace ActualProductionManager.Controllers
             {
                 _logger.LogInformation("GetLines: search parameter = '{Search}'", search);
 
-                // まずすべてのデータを取得
+                // データベースからすべてのラインデータを取得
                 var lines = await _context.Lines.ToListAsync();
 
                 // クライアント側でフィルタリング
@@ -263,6 +315,11 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// 指定されたラインコードに対応するライン名を取得します。
+        /// </summary>
+        /// <param name="code">ラインコード。</param>
+        /// <returns>JSON 形式のライン名。ラインが見つからない場合は空文字列。</returns>
         [HttpGet]
         public async Task<IActionResult> GetLineName(string code)
         {
@@ -283,6 +340,12 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// 品目データを検索して JSON 形式で返します。
+        /// 主に AJAX リクエストで使用され、オートコンプリート機能をサポートします。
+        /// </summary>
+        /// <param name="search">検索キーワード（品目コードまたは品目名）。</param>
+        /// <returns>JSON 形式の品目データ。</returns>
         [HttpGet]
         public async Task<IActionResult> GetItems(string search = "")
         {
@@ -290,7 +353,7 @@ namespace ActualProductionManager.Controllers
             {
                 _logger.LogInformation("GetItems: search parameter = '{Search}'", search);
 
-                // まずすべてのデータを取得
+                // データベースからすべての品目データを取得
                 var items = await _context.Items.ToListAsync();
 
                 // クライアント側でフィルタリング
@@ -315,6 +378,11 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// 指定された品目コードに対応する品目名を取得します。
+        /// </summary>
+        /// <param name="code">品目コード。</param>
+        /// <returns>JSON 形式の品目名。品目が見つからない場合は空文字列。</returns>
         [HttpGet]
         public async Task<IActionResult> GetItemName(string code)
         {
@@ -335,6 +403,14 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// 新しい生産条件データをデータベースに登録します。
+        /// </summary>
+        /// <param name="lineCode">ラインコード。</param>
+        /// <param name="itemCode">品目コード。</param>
+        /// <param name="targetCycleTime">目標サイクルタイム。</param>
+        /// <param name="piecesPerCycle">サイクルあたりの個数。</param>
+        /// <returns>登録成功時は一覧ページへ、失敗時は登録画面へリダイレクト。</returns>
         [HttpPost]
         public async Task<IActionResult> Store(
             string lineCode,
@@ -384,12 +460,23 @@ namespace ActualProductionManager.Controllers
             }
         }
 
+        /// <summary>
+        /// CSV ファイルのインポート画面を表示します。
+        /// </summary>
+        /// <returns>インポート画面ビュー。</returns>
         [HttpGet]
         public IActionResult Import()
         {
             return View();
         }
 
+        /// <summary>
+        /// CSV ファイルから生産条件データをインポートします。
+        /// ファイル形式：ラインコード, 品目コード, 目標サイクルタイム, サイクルあたりの個数
+        /// </summary>
+        /// <param name="csvFile">アップロードされた CSV ファイル。</param>
+        /// <param name="importMode">"upsert" (既存データは更新) または "replace" (既存データは削除)。</param>
+        /// <returns>インポート成功時は一覧ページへ、失敗時はインポート画面へリダイレクト。</returns>
         [HttpPost]
         public async Task<IActionResult> ImportFile(IFormFile csvFile, string importMode = "upsert")
         {
@@ -478,10 +565,10 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Import));
                 }
 
-                // データベースに取込
+                // インポートモードに応じてデータベースに取込
                 if (importMode == "replace")
                 {
-                    // 既存データを削除
+                    // replace モード：既存データを削除
                     var existingConditions = await _context.ProductionConditions.ToListAsync();
                     _context.ProductionConditions.RemoveRange(existingConditions);
                     await _context.SaveChangesAsync();
@@ -536,21 +623,47 @@ namespace ActualProductionManager.Controllers
         }
     }
 
+    /// <summary>
+    /// 生産条件登録画面で使用するビューモデル。
+    /// 未登録のラインと品目の組み合わせ情報を表示するために使用します。
+    /// </summary>
     public class ProductionConditionRegistrationViewModel
     {
+        /// <summary>ラインコード。</summary>
         public string LineCode { get; set; } = string.Empty;
+
+        /// <summary>ラインの表示名。</summary>
         public string LineName { get; set; } = string.Empty;
+
+        /// <summary>品目コード。</summary>
         public string ItemCode { get; set; } = string.Empty;
+
+        /// <summary>品目の表示名。</summary>
         public string ItemName { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// 生産条件一覧画面で使用するビューモデル。
+    /// 登録済みの生産条件情報を表示するために使用します。
+    /// </summary>
     public class ProductionConditionViewModel
     {
+        /// <summary>ラインコード。</summary>
         public string LineCode { get; set; } = string.Empty;
+
+        /// <summary>ラインの表示名。</summary>
         public string LineName { get; set; } = string.Empty;
+
+        /// <summary>品目コード。</summary>
         public string ItemCode { get; set; } = string.Empty;
+
+        /// <summary>品目の表示名。</summary>
         public string ItemName { get; set; } = string.Empty;
+
+        /// <summary>目標サイクルタイム。</summary>
         public int TargetCycleTime { get; set; }
+
+        /// <summary>サイクルあたりの個数。</summary>
         public int PiecesPerCycle { get; set; }
     }
 }

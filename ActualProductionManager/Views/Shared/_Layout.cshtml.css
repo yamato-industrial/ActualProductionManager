@@ -1,57 +1,14 @@
 ﻿/* 実績収集マネージャーのレイアウトスタイル定義 */
 
-/* ナビゲーションブランドの基本スタイル */
+/* ナビゲーションブランドの基本スタイル（adminLTEがカバー） */
 a.navbar-brand {
     white-space: normal;
     text-align: center;
     word-break: break-all;
 }
 
-/* リンクのカラー設定 */
-a {
-    color: #0077cc;
-}
-
-/* プライマリボタンのスタイル */
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
-}
-
-/* ナビゲーションピルズのアクティブ状態スタイル */
-.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
-}
-
-/* 上側のボーダー */
-.border-top {
-    border-top: 1px solid #e5e5e5;
-}
-
-/* 下側のボーダー */
-.border-bottom {
-    border-bottom: 1px solid #e5e5e5;
-}
-
-/* ボックスシャドウエフェクト */
-.box-shadow {
-    box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
-}
-
-/* ポリシー同意ボタンのスタイル */
+/* ポリシー同意ボタンのスタイルのみ保持 */
 button.accept-policy {
     font-size: 1rem;
     line-height: inherit;
-}
-
-/* フッターのスタイル */
-.footer {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    white-space: nowrap;
-    line-height: 60px;
 }

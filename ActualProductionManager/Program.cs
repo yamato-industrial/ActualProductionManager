@@ -10,7 +10,6 @@ builder.Services.AddDbContext<ActualProductionContext>((serviceProvider, options
 {
     var configuration = serviceProvider.GetRequiredService<IConfiguration>();
     var connectionString = configuration["Database:ConnectionString"];
-    var schema = configuration["Database:Schema"];
 
     options.UseNpgsql(connectionString, postgresqlOptions =>
     {
@@ -21,7 +20,11 @@ builder.Services.AddDbContext<ActualProductionContext>((serviceProvider, options
 var app = builder.Build();
 
 // ä¬ã´ï èàóù
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();

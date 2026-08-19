@@ -41,4 +41,9 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+app.MapGet("/env", (IWebHostEnvironment env) =>
+{
+    return env.EnvironmentName;
+});
+
 app.Run();

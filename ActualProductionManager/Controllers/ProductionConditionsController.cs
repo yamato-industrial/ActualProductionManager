@@ -208,8 +208,8 @@ namespace ActualProductionManager.Controllers
         public async Task<IActionResult> Update(
             string lineCode,
             string itemCode,
-            int targetCycleTime,
-            int piecesPerCycle)
+            int? targetCycleTime,
+            int? piecesPerCycle)
         {
             try
             {
@@ -223,8 +223,8 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                condition.TargetCycleTime = targetCycleTime;
-                condition.PiecesPerCycle = piecesPerCycle;
+                condition.TargetCycleTime = targetCycleTime ?? condition.TargetCycleTime;
+                condition.PiecesPerCycle = piecesPerCycle ?? condition.PiecesPerCycle;
                 condition.UpdatedAt = DateTime.UtcNow;
 
                 _context.ProductionConditions.Update(condition);

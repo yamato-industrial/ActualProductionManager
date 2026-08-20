@@ -49,16 +49,16 @@ namespace ActualProductionManager.Controllers
             {
                 var query = _context.ProductionConditions.AsQueryable();
 
-                // フィルタ処理：ラインコードで検索
+                // フィルタ処理：ラインコードで検索（PostgreSQL の ILIKE を使用）
                 if (!string.IsNullOrEmpty(searchLineCode))
                 {
-                    query = query.Where(c => c.LineCode.Contains(searchLineCode, StringComparison.OrdinalIgnoreCase));
+                    query = query.Where(c => EF.Functions.ILike(c.LineCode, $"%{searchLineCode}%"));
                 }
 
-                // フィルタ処理：品目コードで検索
+                // フィルタ処理：品目コードで検索（PostgreSQL の ILIKE を使用）
                 if (!string.IsNullOrEmpty(searchItemCode))
                 {
-                    query = query.Where(c => c.ItemCode.Contains(searchItemCode, StringComparison.OrdinalIgnoreCase));
+                    query = query.Where(c => EF.Functions.ILike(c.ItemCode, $"%{searchItemCode}%"));
                 }
 
                 // ソート処理：指定されたフィールドと順序でソート

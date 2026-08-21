@@ -120,11 +120,11 @@
     </div>
 
     <!-- 共通モーダルコンテナ -->
-    <div class="modal fade" id="commonModal" tabindex="-1" aria-labelledby="commonModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
+    <div class="modal fade" id="commonModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="commonModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="commonModalLabel">通知</h5>
+                    <h1 class="modal-title fs-5" id="commonModalLabel">通知</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
                 </div>
                 <div class="modal-body" id="commonModalBody">
@@ -151,12 +151,27 @@
             // モーダル要素とBootstrapモーダルインスタンス
             element: null,
             modal: null,
-            confirmCallback: null,
 
             // 初期化
             init: function () {
                 this.element = document.getElementById('commonModal');
-                this.modal = new bootstrap.Modal(this.element, { backdrop: 'static', keyboard: false });
+                // Bootstrapのオプションを明示的に設定
+                this.modal = new bootstrap.Modal(this.element, {
+                    backdrop: 'static',  // static で背景クリック無効化
+                    keyboard: true       // Esc キー有効化
+                });
+
+                // モーダルが閉じるときのイベントリスナー
+                this.element.addEventListener('hidden.bs.modal', () => {
+                    this.reset();
+                });
+
+                // data-bs-dismiss属性を持つボタンに対するイベント委譲
+                this.element.addEventListener('click', (event) => {
+                    if (event.target.hasAttribute('data-bs-dismiss')) {
+                        this.modal.hide();
+                    }
+                });
             },
 
             // 成功メッセージを表示
@@ -187,7 +202,7 @@
                 confirmBtn.textContent = '確認';
                 confirmBtn.onclick = () => {
                     if (onConfirm) onConfirm();
-                    this.modal.hide();
+                    this.hide();
                 };
             },
 
@@ -238,8 +253,6 @@
 
                 bodyElement.appendChild(messageDiv);
 
-                this.confirmCallback = onConfirm;
-
                 if (type !== 'confirm') {
                     confirmBtn.style.display = 'none';
                 }
@@ -252,6 +265,13 @@
                 if (this.modal) {
                     this.modal.hide();
                 }
+            },
+
+            // 状態をリセット
+            reset: function () {
+                const confirmBtn = document.getElementById('commonModalConfirmBtn');
+                confirmBtn.style.display = 'none';
+                confirmBtn.onclick = null;
             }
         };
 

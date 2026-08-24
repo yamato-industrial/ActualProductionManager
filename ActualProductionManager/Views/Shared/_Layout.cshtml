@@ -114,7 +114,7 @@
         <footer class="main-footer">
             <strong>実績収集マスタ管理アプリケーション</strong>
             <div class="float-right d-none d-sm-inline-block">
-                <b>バージョン</b> 0.1.1
+                <b>バージョン</b> @GetAssemblyVersion()
             </div>
         </footer>
     </div>
@@ -284,3 +284,11 @@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+
+@functions {
+    private string GetAssemblyVersion()
+    {
+        var version = typeof(Program).Assembly.GetName().Version;
+        return version?.ToString() ?? "0.0.0.0";
+    }
+}

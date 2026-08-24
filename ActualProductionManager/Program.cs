@@ -11,10 +11,14 @@ builder.Services.AddDbContext<ActualProductionContext>((serviceProvider, options
     var configuration = serviceProvider.GetRequiredService<IConfiguration>();
     var connectionString = configuration["Database:ConnectionString"];
 
-    options.UseNpgsql(connectionString, postgresqlOptions =>
-    {
-        postgresqlOptions.SetPostgresVersion(14, 2);
-    });
+    options.UseNpgsql(
+        connectionString,
+        postgresqlOptions =>
+        {
+            postgresqlOptions.SetPostgresVersion(14, 2);
+            postgresqlOptions.CommandTimeout(30);
+            postgresqlOptions.EnableRetryOnFailure(3);
+        });
 });
 
 var app = builder.Build();

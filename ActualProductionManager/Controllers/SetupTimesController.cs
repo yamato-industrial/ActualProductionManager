@@ -480,14 +480,12 @@ namespace ActualProductionManager.Controllers
             {
                 if (csvFile == null || csvFile.Length == 0)
                 {
-                    TempData["ErrorMessage"] = "CSVファイルを選択してください";
-                    return RedirectToAction(nameof(Import));
+                    return Json(new { success = false, error = "CSVファイルを選択してください" });
                 }
 
                 if (!csvFile.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 {
-                    TempData["ErrorMessage"] = "CSVファイルのみアップロード可能です";
-                    return RedirectToAction(nameof(Import));
+                    return Json(new { success = false, error = "CSVファイルのみアップロード可能です" });
                 }
 
                 var importedRecords = new List<(string LineCode, string ItemCode, int Minutes)>();
@@ -543,22 +541,26 @@ namespace ActualProductionManager.Controllers
 
                 if (errors.Count != 0)
                 {
-                    TempData["ErrorMessage"] = $"CSVファイルにエラーがあります：<br>{string.Join("<br>", errors.Take(10))}";
+                    var errorMessages = errors.Take(10).ToList();
+                    var errorHtml = "<ul style='text-align: left;'>" +
+                        string.Join("", errorMessages.Select(e => $"<li>{e}</li>")) +
+                        "</ul>";
+
                     if (errors.Count > 10)
-                        TempData["ErrorMessage"] += $"<br>他 {errors.Count - 10} 件のエラーがあります";
-                    return RedirectToAction(nameof(Import));
+                        errorHtml += $"<p>他 {errors.Count - 10} 件のエラーがあります</p>";
+
+                    return Json(new { success = false, error = "CSVファイルにエラーがあります", details = errorHtml });
                 }
 
                 if (importedRecords.Count == 0)
                 {
-                    TempData["ErrorMessage"] = "有効なデータが1行も見つかりませんでした";
-                    return RedirectToAction(nameof(Import));
+                    return Json(new { success = false, error = "有効なデータが1行以上必要です" });
                 }
 
-                // インポートモードに応じてデータベースに取込
+                // インポートモードに応じてデータベースに登録
                 if (importMode == "replace")
                 {
-                    // replace モード：既存データを削除
+                    // replace モード: 既存データを削除
                     var existingSetupTimes = await _context.SetupTimes.ToListAsync();
                     _context.SetupTimes.RemoveRange(existingSetupTimes);
                     await _context.SaveChangesAsync();
@@ -598,15 +600,13 @@ namespace ActualProductionManager.Controllers
 
                 var successMessage = $"取込完了しました。追加: {insertCount}件、更新: {updateCount}件";
                 _logger.LogInformation(successMessage);
-                TempData["SuccessMessage"] = successMessage;
 
-                return RedirectToAction(nameof(Index));
+                return Json(new { success = true, message = successMessage, insertCount, updateCount });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CSV取込エラー");
-                TempData["ErrorMessage"] = $"取込処理中にエラーが発生しました: {ex.Message}";
-                return RedirectToAction(nameof(Import));
+                return Json(new { success = false, error = $"取込処理中にエラーが発生しました: {ex.Message}" });
             }
         }
     }

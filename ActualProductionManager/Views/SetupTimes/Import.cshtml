@@ -35,7 +35,7 @@
 
                 <hr>
 
-                <form asp-controller="SetupTimes" asp-action="ImportFile" method="post" enctype="multipart/form-data">
+                <form id="importForm" enctype="multipart/form-data">
                     <div class="form-group">
                         <label for="csvFile">CSVファイルを選択</label>
                         <div class="custom-file">
@@ -91,9 +91,59 @@
     </div>
 </div>
 
-<script>
-    document.getElementById('csvFile').addEventListener('change', function (e) {
-        var fileName = e.target.files[0]?.name || 'ファイルを選択...';
-        document.querySelector('.custom-file-label').textContent = fileName;
-    });
-</script>
+@section Scripts {
+    <script>
+        // ファイル名表示
+        document.getElementById('csvFile').addEventListener('change', function (e) {
+            var fileName = e.target.files[0]?.name || 'ファイルを選択...';
+            document.querySelector('.custom-file-label').textContent = fileName;
+        });
+
+        // フォーム送信処理
+        document.getElementById('importForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const form = this;
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('@Url.Action("ImportFile", "SetupTimes")', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 成功時
+                    AppModal.showSuccess(
+                        'インポート完了',
+                        `${data.message}`
+                    );
+
+                    // 2秒後に一覧ページへリダイレクト
+                    setTimeout(() => {
+                        window.location.href = '@Url.Action("Index", "SetupTimes")';
+                    }, 2000);
+                } else {
+                    // エラー時
+                    let errorMessage = data.error;
+                    if (data.details) {
+                        errorMessage += '<br><br>' + data.details;
+                    }
+
+                    AppModal.showError(
+                        'インポートエラー',
+                        errorMessage
+                    );
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                AppModal.showError(
+                    'エラーが発生しました',
+                    'インポート処理中に予期しないエラーが発生しました。'
+                );
+            }
+        });
+    </script>
+}

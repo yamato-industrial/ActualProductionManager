@@ -119,12 +119,167 @@
         </footer>
     </div>
 
+    <!-- 共通モーダルコンテナ -->
+    <div class="modal fade" id="commonModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="commonModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="commonModalLabel">通知</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+                </div>
+                <div class="modal-body" id="commonModalBody">
+                    <!-- コンテンツがここに挿入される -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    <button type="button" class="btn btn-primary" id="commonModalConfirmBtn" style="display: none;">確認</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 必須スクリプト -->
     <script src="~/adminlte/plugins/jquery/jquery.min.js"></script>
     <script src="~/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="~/adminlte/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
     <script src="~/adminlte/dist/js/adminlte.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        // 汎用モーダル表示用オブジェクト
+        const AppModal = {
+            // モーダル要素とBootstrapモーダルインスタンス
+            element: null,
+            modal: null,
+
+            // 初期化
+            init: function () {
+                this.element = document.getElementById('commonModal');
+                // Bootstrapのオプションを明示的に設定
+                this.modal = new bootstrap.Modal(this.element, {
+                    backdrop: 'static',  // static で背景クリック無効化
+                    keyboard: true       // Esc キー有効化
+                });
+
+                // モーダルが閉じるときのイベントリスナー
+                this.element.addEventListener('hidden.bs.modal', () => {
+                    this.reset();
+                });
+
+                // data-bs-dismiss属性を持つボタンに対するイベント委譲
+                this.element.addEventListener('click', (event) => {
+                    if (event.target.hasAttribute('data-bs-dismiss')) {
+                        this.modal.hide();
+                    }
+                });
+            },
+
+            // 成功メッセージを表示
+            showSuccess: function (title, message, onConfirm) {
+                this.show('success', title, message, onConfirm);
+            },
+
+            // エラーメッセージを表示
+            showError: function (title, message, onConfirm) {
+                this.show('error', title, message, onConfirm);
+            },
+
+            // 警告メッセージを表示
+            showWarning: function (title, message, onConfirm) {
+                this.show('warning', title, message, onConfirm);
+            },
+
+            // 情報メッセージを表示
+            showInfo: function (title, message, onConfirm) {
+                this.show('info', title, message, onConfirm);
+            },
+
+            // 確認ダイアログを表示
+            showConfirm: function (title, message, onConfirm, onCancel) {
+                this.show('confirm', title, message, onConfirm);
+                const confirmBtn = document.getElementById('commonModalConfirmBtn');
+                confirmBtn.style.display = 'block';
+                confirmBtn.textContent = '確認';
+                confirmBtn.onclick = () => {
+                    if (onConfirm) onConfirm();
+                    this.hide();
+                };
+            },
+
+            // 内部用：モーダルを表示
+            show: function (type, title, message, onConfirm) {
+                if (!this.modal) {
+                    this.init();
+                }
+
+                const titleElement = document.getElementById('commonModalLabel');
+                const bodyElement = document.getElementById('commonModalBody');
+                const confirmBtn = document.getElementById('commonModalConfirmBtn');
+
+                titleElement.textContent = title;
+                bodyElement.innerHTML = '';
+
+                // アイコンとメッセージをレンダリング
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'd-flex align-items-center';
+
+                const iconSpan = document.createElement('span');
+                iconSpan.className = 'me-3';
+                iconSpan.style.fontSize = '24px';
+
+                switch (type) {
+                    case 'success':
+                        iconSpan.innerHTML = '<i class="fas fa-check-circle text-success"></i>';
+                        break;
+                    case 'error':
+                        iconSpan.innerHTML = '<i class="fas fa-times-circle text-danger"></i>';
+                        break;
+                    case 'warning':
+                        iconSpan.innerHTML = '<i class="fas fa-exclamation-circle text-warning"></i>';
+                        break;
+                    case 'info':
+                        iconSpan.innerHTML = '<i class="fas fa-info-circle text-info"></i>';
+                        break;
+                    case 'confirm':
+                        iconSpan.innerHTML = '<i class="fas fa-question-circle text-primary"></i>';
+                        break;
+                }
+
+                messageDiv.appendChild(iconSpan);
+
+                const textDiv = document.createElement('div');
+                textDiv.innerHTML = message;
+                messageDiv.appendChild(textDiv);
+
+                bodyElement.appendChild(messageDiv);
+
+                if (type !== 'confirm') {
+                    confirmBtn.style.display = 'none';
+                }
+
+                this.modal.show();
+            },
+
+            // モーダルを閉じる
+            hide: function () {
+                if (this.modal) {
+                    this.modal.hide();
+                }
+            },
+
+            // 状態をリセット
+            reset: function () {
+                const confirmBtn = document.getElementById('commonModalConfirmBtn');
+                confirmBtn.style.display = 'none';
+                confirmBtn.onclick = null;
+            }
+        };
+
+        // ページロード時に初期化
+        document.addEventListener('DOMContentLoaded', function () {
+            AppModal.init();
+        });
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

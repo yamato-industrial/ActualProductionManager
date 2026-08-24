@@ -108,6 +108,7 @@
                                         <form method="post" action="@Url.Action("Update")" style="display:inline;">
                                             <input type="hidden" name="lineCode" value="@condition.LineCode" />
                                             <input type="hidden" name="itemCode" value="@condition.ItemCode" />
+                                            <input type="hidden" name="piecesPerCycle" value="@condition.PiecesPerCycle" />
                                             <div class="input-group input-group-sm" style="width: 120px;">
                                                 <input type="number" class="form-control" name="targetCycleTime" value="@condition.TargetCycleTime" min="1" />
                                                 <span class="input-group-append">
@@ -122,6 +123,7 @@
                                         <form method="post" action="@Url.Action("Update")" style="display:inline;">
                                             <input type="hidden" name="lineCode" value="@condition.LineCode" />
                                             <input type="hidden" name="itemCode" value="@condition.ItemCode" />
+                                            <input type="hidden" name="TargetCycleTime" value="@condition.TargetCycleTime" />
                                             <div class="input-group input-group-sm" style="width: 120px;">
                                                 <input type="number" class="form-control" name="piecesPerCycle" value="@condition.PiecesPerCycle" min="1" />
                                                 <span class="input-group-append">

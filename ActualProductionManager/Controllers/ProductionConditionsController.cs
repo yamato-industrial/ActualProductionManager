@@ -49,16 +49,16 @@ namespace ActualProductionManager.Controllers
             {
                 var query = _context.ProductionConditions.AsQueryable();
 
-                // フィルタ処理：ラインコードで検索
+                // フィルタ処理：ラインコードで検索（PostgreSQL の ILIKE を使用）
                 if (!string.IsNullOrEmpty(searchLineCode))
                 {
-                    query = query.Where(c => c.LineCode.Contains(searchLineCode, StringComparison.OrdinalIgnoreCase));
+                    query = query.Where(c => EF.Functions.ILike(c.LineCode, $"%{searchLineCode}%"));
                 }
 
-                // フィルタ処理：品目コードで検索
+                // フィルタ処理：品目コードで検索（PostgreSQL の ILIKE を使用）
                 if (!string.IsNullOrEmpty(searchItemCode))
                 {
-                    query = query.Where(c => c.ItemCode.Contains(searchItemCode, StringComparison.OrdinalIgnoreCase));
+                    query = query.Where(c => EF.Functions.ILike(c.ItemCode, $"%{searchItemCode}%"));
                 }
 
                 // ソート処理：指定されたフィールドと順序でソート
@@ -208,8 +208,8 @@ namespace ActualProductionManager.Controllers
         public async Task<IActionResult> Update(
             string lineCode,
             string itemCode,
-            int targetCycleTime,
-            int piecesPerCycle)
+            int? targetCycleTime,
+            int? piecesPerCycle)
         {
             try
             {
@@ -223,8 +223,8 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                condition.TargetCycleTime = targetCycleTime;
-                condition.PiecesPerCycle = piecesPerCycle;
+                condition.TargetCycleTime = targetCycleTime ?? condition.TargetCycleTime;
+                condition.PiecesPerCycle = piecesPerCycle ?? condition.PiecesPerCycle;
                 condition.UpdatedAt = DateTime.UtcNow;
 
                 _context.ProductionConditions.Update(condition);
@@ -484,20 +484,18 @@ namespace ActualProductionManager.Controllers
             {
                 if (csvFile == null || csvFile.Length == 0)
                 {
-                    TempData["ErrorMessage"] = "CSVファイルを選択してください";
-                    return RedirectToAction(nameof(Import));
+                    return Json(new { success = false, error = "CSVファイルを選択してください" });
                 }
 
                 if (!csvFile.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
                 {
-                    TempData["ErrorMessage"] = "CSVファイルのみアップロード可能です";
-                    return RedirectToAction(nameof(Import));
+                    return Json(new { success = false, error = "CSVファイルのみアップロード可能です" });
                 }
 
                 var importedRecords = new List<(string LineCode, string ItemCode, int TargetCycleTime, int PiecesPerCycle)>();
                 var errors = new List<string>();
 
-                using (var stream = new StreamReader(csvFile.OpenReadStream()))
+                using (var stream = new StreamReader(csvFile.OpenReadStream(), System.Text.Encoding.UTF8))
                 {
                     int lineNumber = 0;
                     while (!stream.EndOfStream)
@@ -553,16 +551,20 @@ namespace ActualProductionManager.Controllers
 
                 if (errors.Count != 0)
                 {
-                    TempData["ErrorMessage"] = $"CSVファイルにエラーがあります：<br>{string.Join("<br>", errors.Take(10))}";
+                    var errorMessages = errors.Take(10).ToList();
+                    var errorHtml = "<ul style='text-align: left;'>" +
+                        string.Join("", errorMessages.Select(e => $"<li>{e}</li>")) +
+                        "</ul>";
+
                     if (errors.Count > 10)
-                        TempData["ErrorMessage"] += $"<br>他 {errors.Count - 10} 件のエラーがあります";
-                    return RedirectToAction(nameof(Import));
+                        errorHtml += $"<p>他 {errors.Count - 10} 件のエラーがあります</p>";
+
+                    return Json(new { success = false, error = "CSVファイルにエラーがあります", details = errorHtml });
                 }
 
                 if (importedRecords.Count == 0)
                 {
-                    TempData["ErrorMessage"] = "有効なデータが1行も見つかりませんでした";
-                    return RedirectToAction(nameof(Import));
+                    return Json(new { success = false, error = "有効なデータが1行以上必要です" });
                 }
 
                 // インポートモードに応じてデータベースに取込
@@ -610,15 +612,13 @@ namespace ActualProductionManager.Controllers
 
                 var successMessage = $"取込完了しました。追加: {insertCount}件、更新: {updateCount}件";
                 _logger.LogInformation(successMessage);
-                TempData["SuccessMessage"] = successMessage;
 
-                return RedirectToAction(nameof(Index));
+                return Json(new { success = true, message = successMessage, insertCount, updateCount });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CSV取込エラー");
-                TempData["ErrorMessage"] = $"取込処理中にエラーが発生しました: {ex.Message}";
-                return RedirectToAction(nameof(Import));
+                return Json(new { success = false, error = $"取込処理中にエラーが発生しました: {ex.Message}" });
             }
         }
     }

@@ -1,0 +1,75 @@
+﻿@{
+    ViewData["Title"] = "金型 - 新規登録";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">
+                    金型新規登録
+                </h3>
+            </div>
+            <form id="registrationForm" method="post" action="@Url.Action("Store", "Molds")">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="code">金型コード<span class="text-danger">*</span></label>
+                        <input type="text" id="code" name="code" class="form-control" placeholder="QRコードとして印字されているID" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="name">金型名称<span class="text-danger">*</span></label>
+                        <input type="text" id="name" name="name" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="storageLocation">置場</label>
+                        <input type="text" id="storageLocation" name="storageLocation" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="warningShots">注意ショット数<span class="text-danger">*</span></label>
+                        <input type="number" id="warningShots" name="warningShots" class="form-control" min="0" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="replacementShots">交換ショット数<span class="text-danger">*</span></label>
+                        <input type="number" id="replacementShots" name="replacementShots" class="form-control" min="1" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="remarks">備考</label>
+                        <textarea id="remarks" name="remarks" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">登録</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">キャンセル</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+
+    <script>
+        $(document).ready(function () {
+            $('#registrationForm').on('submit',function (e) {
+                const code = $('#code').val();
+                const name = $('#name').val();
+                const warningShots = Number($('#warningShots').val());
+                const replacementShots = Number($('#replacementShots').val());
+
+                if (!code || !name || !$('#warningShots').val() || !$('#replacementShots').val()) {
+                    e.preventDefault();
+                    alert('必須項目をすべて入力してください');
+
+                    return false;
+                }
+
+                if (warningShots >= replacementShots) {
+                    e.preventDefault();
+                    alert('注意ショット数は交換ショット数より小さい値を入力してください');
+
+                    return false;
+                }
+            });
+        });
+    </script>
+}

@@ -28,6 +28,9 @@ public partial class ActualProductionContext : DbContext
     public virtual DbSet<Line> Lines { get; set; }
     public virtual DbSet<ProductionCondition> ProductionConditions { get; set; }
     public virtual DbSet<SetupTime> SetupTimes { get; set; }
+    public virtual DbSet<Mold> Molds { get; set; }
+    public virtual DbSet<MoldShotTransaction> MoldShotTransactions { get; set; }
+    public virtual DbSet<MoldMaintenanceHistory> MoldMaintenanceHistories { get; set; }
 
     /// <summary>
     /// データベースモデルの構成を定義します。各エンティティのテーブル名、カラム名、主キー、外部キーなどをマッピングします。
@@ -85,6 +88,22 @@ public partial class ActualProductionContext : DbContext
             entity.Property(e => e.ItemCode).HasColumnName("item_code");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.TargetSetupTime).HasColumnName("target_setup_time");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+        });
+
+        modelBuilder.Entity<Mold>(entity =>
+        {
+            entity.HasKey(e => e.Code).HasName("pk_molds_01");
+
+            entity.ToTable("molds", Schema);
+
+            entity.Property(e => e.Code).HasColumnName("code");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.StorageLocation).HasColumnName("storage_location");
+            entity.Property(e => e.WarningShots).HasColumnName("warning_shots");
+            entity.Property(e => e.ReplacementShots).HasColumnName("replacement_shots");
+            entity.Property(e => e.Remarks).HasColumnName("remarks");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         });
 

@@ -49,30 +49,23 @@ namespace ActualProductionManager.Controllers
             {
                 var query = _context.SetupTimes.AsQueryable();
 
-                // フィルタ処理：ラインコードで検索（PostgreSQL の ILIKE を使用）
                 if (!string.IsNullOrEmpty(searchLineCode))
                 {
                     query = query.Where(s => EF.Functions.ILike(s.LineCode, $"%{searchLineCode}%"));
                 }
 
-                // フィルタ処理：品目コードで検索（PostgreSQL の ILIKE を使用）
                 if (!string.IsNullOrEmpty(searchItemCode))
                 {
                     query = query.Where(s => EF.Functions.ILike(s.ItemCode, $"%{searchItemCode}%"));
                 }
 
-                // ソート処理：指定されたフィールドと順序でソート
                 query = sortBy switch
                 {
-                    "targetSetupTime" => sortOrder == "asc"
-                        ? query.OrderBy(s => s.TargetSetupTime)
-                        : query.OrderByDescending(s => s.TargetSetupTime),
-                    _ => sortOrder == "asc"
-                        ? query.OrderBy(s => s.LineCode).ThenBy(s => s.ItemCode)
-                        : query.OrderByDescending(s => s.LineCode).ThenByDescending(s => s.ItemCode),
+                    "lineCode" => sortOrder == "asc" ? query.OrderBy(c => c.LineCode) : query.OrderByDescending(c => c.LineCode),
+                    "itemCode" => sortOrder == "asc" ? query.OrderBy(c => c.ItemCode) : query.OrderByDescending(c => c.ItemCode),
+                    _ => sortOrder == "asc" ? query.OrderBy(c => c.LineCode).ThenBy(c => c.ItemCode) : query.OrderByDescending(c => c.LineCode).ThenByDescending(c => c.ItemCode),
                 };
 
-                // ページサイズの検証：許可された値のみを受け入れる
                 var allowedPageSizes = new[] { 10, 25, 50, 100 };
                 if (!allowedPageSizes.Contains(pageSize))
                 {
@@ -84,24 +77,14 @@ namespace ActualProductionManager.Controllers
                 var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
                 page = Math.Min(page, totalPages);
 
-                var setupTimes = await query
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
+                var setupTimes = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
-                // ラインコードと品目コードを抽出
                 var lineCodes = setupTimes.Select(x => x.LineCode).Distinct().ToList();
                 var itemCodes = setupTimes.Select(x => x.ItemCode).Distinct().ToList();
 
-                // 対応するラインと品目の名前をデータベースから取得してマッピング
-                var lineNames = await _context.Lines
-                    .Where(line => lineCodes.Contains(line.Code))
-                    .ToDictionaryAsync(line => line.Code, line => line.Name);
-                var itemNames = await _context.Items
-                    .Where(item => itemCodes.Contains(item.Code))
-                    .ToDictionaryAsync(item => item.Code, item => item.Name);
+                var lineNames = await _context.Lines.Where(line => lineCodes.Contains(line.Code)).ToDictionaryAsync(line => line.Code, line => line.Name);
+                var itemNames = await _context.Items.Where(item => itemCodes.Contains(item.Code)).ToDictionaryAsync(item => item.Code, item => item.Name);
 
-                // ビューモデルを構築
                 var viewModels = setupTimes.Select(s => new SetupTimeViewModel
                 {
                     LineCode = s.LineCode,
@@ -132,71 +115,6 @@ namespace ActualProductionManager.Controllers
         }
 
         /// <summary>
-        /// 新規登録可能な段取り時間の候補（未登録のラインコードと品目コードの組み合わせ）を表示します。
-        /// </summary>
-        /// <param name="pageSize">1 ページあたりの表示件数。</param>
-        /// <param name="page">表示ページ番号。</param>
-        /// <returns>登録候補一覧ビュー。</returns>
-        public async Task<IActionResult> Create(int pageSize = 10, int page = 1)
-        {
-            try
-            {
-                // ページサイズの検証
-                var allowedPageSizes = new[] { 10, 25, 50, 100 };
-                if (!allowedPageSizes.Contains(pageSize))
-                {
-                    pageSize = 10;
-                }
-
-                page = Math.Max(page, 1);
-
-                // 既に登録済みのキーセットを取得
-                var registeredKeys = _context.SetupTimes
-                    .Select(x => new { x.LineCode, x.ItemCode });
-
-                // 登録されていないラインと品目の組み合わせを取得
-                var query =
-                    from line in _context.Lines
-                    from item in _context.Items
-                    join registered in registeredKeys
-                        on new { LineCode = line.Code, ItemCode = item.Code }
-                        equals new { registered.LineCode, registered.ItemCode } into registeredGroup
-                    from registered in registeredGroup.DefaultIfEmpty()
-                    where registered == null
-                    orderby line.Code, item.Code
-                    select new SetupTimeRegistrationViewModel
-                    {
-                        LineCode = line.Code,
-                        LineName = line.Name,
-                        ItemCode = item.Code,
-                        ItemName = item.Name
-                    };
-
-                var totalCount = await query.CountAsync();
-                var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
-                page = Math.Min(page, totalPages);
-
-                var viewModels = await query
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                ViewData["PageSize"] = pageSize;
-                ViewData["Page"] = page;
-                ViewData["TotalCount"] = totalCount;
-                ViewData["TotalPages"] = totalPages;
-
-                return View(viewModels);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "段取り時間登録候補データ取得エラー");
-                TempData["ErrorMessage"] = $"データ取得エラー: {ex.Message}";
-                return View(new List<SetupTimeRegistrationViewModel>());
-            }
-        }
-
-        /// <summary>
         /// 指定されたラインコードと品目コードの段取り時間を更新します。
         /// </summary>
         /// <param name="lineCode">ラインコード。</param>
@@ -221,7 +139,6 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                // 分を秒に変換してデータベースに保存
                 setupTime.TargetSetupTime = targetSetupTimeMinutes * 60;
                 setupTime.UpdatedAt = DateTime.UtcNow;
 
@@ -276,129 +193,12 @@ namespace ActualProductionManager.Controllers
         }
 
         /// <summary>
-        /// ラインデータを検索して JSON 形式で返します。
-        /// 主に AJAX リクエストで使用され、オートコンプリート機能をサポートします。
+        /// 新規登録可能な段取り時間の候補（未登録のラインコードと品目コードの組み合わせ）を表示します。
         /// </summary>
-        /// <param name="search">検索キーワード（ラインコードまたはライン名）。</param>
-        /// <returns>JSON 形式のラインデータ。</returns>
-        [HttpGet]
-        public async Task<IActionResult> GetLines(string search = "")
+        /// <returns>段取り新規登録ビュー。</returns>
+        public IActionResult Create()
         {
-            try
-            {
-                _logger.LogInformation("GetLines: search parameter = '{Search}'", search);
-
-                // データベースからすべてのラインデータを取得
-                var lines = await _context.Lines.ToListAsync();
-
-                // クライアント側でフィルタリング
-                if (!string.IsNullOrEmpty(search))
-                {
-                    lines = [.. lines.Where(l => l.Code.Contains(search, StringComparison.OrdinalIgnoreCase) || l.Name.Contains(search, StringComparison.OrdinalIgnoreCase))];
-                }
-
-                var result = lines
-                    .Select(l => new { id = l.Code, text = $"{l.Code} - {l.Name}" })
-                    .OrderBy(l => l.id)
-                    .ToList();
-
-                _logger.LogInformation("GetLines: returning {Count} results", result.Count);
-
-                return Json(new { results = result });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ラインデータ取得エラー");
-                return Json(new { results = new List<object>(), error = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// 指定されたラインコードに対応するライン名を取得します。
-        /// </summary>
-        /// <param name="code">ラインコード。</param>
-        /// <returns>JSON 形式のライン名。ラインが見つからない場合は空文字列。</returns>
-        [HttpGet]
-        public async Task<IActionResult> GetLineName(string code)
-        {
-            try
-            {
-                var line = await _context.Lines.FirstOrDefaultAsync(l => l.Code == code);
-                if (line == null)
-                {
-                    return Json(new { name = string.Empty });
-                }
-
-                return Json(new { name = line.Name });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "ライン名取得エラー: {Code}", code);
-                return Json(new { name = string.Empty, error = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// 品目データを検索して JSON 形式で返します。
-        /// 主に AJAX リクエストで使用され、オートコンプリート機能をサポートします。
-        /// </summary>
-        /// <param name="search">検索キーワード（品目コードまたは品目名）。</param>
-        /// <returns>JSON 形式の品目データ。</returns>
-        [HttpGet]
-        public async Task<IActionResult> GetItems(string search = "")
-        {
-            try
-            {
-                _logger.LogInformation("GetItems: search parameter = '{Search}'", search);
-
-                // データベースからすべての品目データを取得
-                var items = await _context.Items.ToListAsync();
-
-                // クライアント側でフィルタリング
-                if (!string.IsNullOrEmpty(search))
-                {
-                    items = [.. items.Where(i => i.Code.Contains(search, StringComparison.OrdinalIgnoreCase) || i.Name.Contains(search, StringComparison.OrdinalIgnoreCase))];
-                }
-
-                var result = items
-                    .Select(i => new { id = i.Code, text = $"{i.Code} - {i.Name}" })
-                    .OrderBy(i => i.id)
-                    .ToList();
-
-                _logger.LogInformation("GetItems: returning {Count} results", result.Count);
-
-                return Json(new { results = result });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "品目データ取得エラー");
-                return Json(new { results = new List<object>(), error = ex.Message });
-            }
-        }
-
-        /// <summary>
-        /// 指定された品目コードに対応する品目名を取得します。
-        /// </summary>
-        /// <param name="code">品目コード。</param>
-        /// <returns>JSON 形式の品目名。品目が見つからない場合は空文字列。</returns>
-        [HttpGet]
-        public async Task<IActionResult> GetItemName(string code)
-        {
-            try
-            {
-                var item = await _context.Items.FirstOrDefaultAsync(i => i.Code == code);
-                if (item == null)
-                {
-                    return Json(new { name = string.Empty });
-                }
-
-                return Json(new { name = item.Name });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "品目名取得エラー: {Code}", code);
-                return Json(new { name = string.Empty, error = ex.Message });
-            }
+            return View(new SetupTimeRegistrationViewModel());
         }
 
         /// <summary>
@@ -431,7 +231,6 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Create));
                 }
 
-                // 分を秒に変換してデータベースに保存
                 var setupTime = new SetupTime
                 {
                     LineCode = lineCode,
@@ -557,10 +356,8 @@ namespace ActualProductionManager.Controllers
                     return Json(new { success = false, error = "有効なデータが1行以上必要です" });
                 }
 
-                // インポートモードに応じてデータベースに登録
                 if (importMode == "replace")
                 {
-                    // replace モード: 既存データを削除
                     var existingSetupTimes = await _context.SetupTimes.ToListAsync();
                     _context.SetupTimes.RemoveRange(existingSetupTimes);
                     await _context.SaveChangesAsync();
@@ -609,6 +406,128 @@ namespace ActualProductionManager.Controllers
                 return Json(new { success = false, error = $"取込処理中にエラーが発生しました: {ex.Message}" });
             }
         }
+
+        /// <summary>
+        /// ラインデータを検索して JSON 形式で返します。
+        /// 主に AJAX リクエストで使用され、オートコンプリート機能をサポートします。
+        /// </summary>
+        /// <param name="search">検索キーワード（ラインコードまたはライン名）。</param>
+        /// <returns>JSON 形式のラインデータ。</returns>
+        [HttpGet]
+        public async Task<IActionResult> GetLines(string search = "")
+        {
+            try
+            {
+                _logger.LogInformation("GetLines: search parameter = '{Search}'", search);
+
+                var lines = await _context.Lines.ToListAsync();
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    lines = [.. lines.Where(l => l.Code.Contains(search, StringComparison.OrdinalIgnoreCase) || l.Name.Contains(search, StringComparison.OrdinalIgnoreCase))];
+                }
+
+                var result = lines
+                    .Select(l => new { id = l.Code, text = $"{l.Code} - {l.Name}" })
+                    .OrderBy(l => l.id)
+                    .ToList();
+
+                _logger.LogInformation("GetLines: returning {Count} results", result.Count);
+
+                return Json(new { results = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ラインデータ取得エラー");
+                return Json(new { results = new List<object>(), error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 指定されたラインコードに対応するライン名を取得します。
+        /// </summary>
+        /// <param name="code">ラインコード。</param>
+        /// <returns>JSON 形式のライン名。ラインが見つからない場合は空文字列。</returns>
+        [HttpGet]
+        public async Task<IActionResult> GetLineName(string code)
+        {
+            try
+            {
+                var line = await _context.Lines.FirstOrDefaultAsync(l => l.Code == code);
+                if (line == null)
+                {
+                    return Json(new { name = string.Empty });
+                }
+
+                return Json(new { name = line.Name });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ライン名取得エラー: {Code}", code);
+                return Json(new { name = string.Empty, error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 品目データを検索して JSON 形式で返します。
+        /// 主に AJAX リクエストで使用され、オートコンプリート機能をサポートします。
+        /// </summary>
+        /// <param name="search">検索キーワード（品目コードまたは品目名）。</param>
+        /// <returns>JSON 形式の品目データ。</returns>
+        [HttpGet]
+        public async Task<IActionResult> GetItems(string search = "")
+        {
+            try
+            {
+                _logger.LogInformation("GetItems: search parameter = '{Search}'", search);
+
+                var items = await _context.Items.ToListAsync();
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    items = [.. items.Where(i => i.Code.Contains(search, StringComparison.OrdinalIgnoreCase) || i.Name.Contains(search, StringComparison.OrdinalIgnoreCase))];
+                }
+
+                var result = items
+                    .Select(i => new { id = i.Code, text = $"{i.Code} - {i.Name}" })
+                    .OrderBy(i => i.id)
+                    .ToList();
+
+                _logger.LogInformation("GetItems: returning {Count} results", result.Count);
+
+                return Json(new { results = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "品目データ取得エラー");
+                return Json(new { results = new List<object>(), error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 指定された品目コードに対応する品目名を取得します。
+        /// </summary>
+        /// <param name="code">品目コード。</param>
+        /// <returns>JSON 形式の品目名。品目が見つからない場合は空文字列。</returns>
+        [HttpGet]
+        public async Task<IActionResult> GetItemName(string code)
+        {
+            try
+            {
+                var item = await _context.Items.FirstOrDefaultAsync(i => i.Code == code);
+                if (item == null)
+                {
+                    return Json(new { name = string.Empty });
+                }
+
+                return Json(new { name = item.Name });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "品目名取得エラー: {Code}", code);
+                return Json(new { name = string.Empty, error = ex.Message });
+            }
+        }
     }
 
     /// <summary>
@@ -617,16 +536,9 @@ namespace ActualProductionManager.Controllers
     /// </summary>
     public class SetupTimeRegistrationViewModel
     {
-        /// <summary>ラインコード。</summary>
         public string LineCode { get; set; } = string.Empty;
-
-        /// <summary>ラインの表示名。</summary>
         public string LineName { get; set; } = string.Empty;
-
-        /// <summary>品目コード。</summary>
         public string ItemCode { get; set; } = string.Empty;
-
-        /// <summary>品目の表示名。</summary>
         public string ItemName { get; set; } = string.Empty;
     }
 
@@ -636,22 +548,11 @@ namespace ActualProductionManager.Controllers
     /// </summary>
     public class SetupTimeViewModel
     {
-        /// <summary>ラインコード。</summary>
         public string LineCode { get; set; } = string.Empty;
-
-        /// <summary>ラインの表示名。</summary>
         public string LineName { get; set; } = string.Empty;
-
-        /// <summary>品目コード。</summary>
         public string ItemCode { get; set; } = string.Empty;
-
-        /// <summary>品目の表示名。</summary>
         public string ItemName { get; set; } = string.Empty;
-
-        /// <summary>目標段取り時間（秒単位）。</summary>
         public int TargetSetupTimeSeconds { get; set; }
-
-        /// <summary>目標段取り時間（分単位）。</summary>
         public int TargetSetupTimeMinutes { get; set; }
     }
 }

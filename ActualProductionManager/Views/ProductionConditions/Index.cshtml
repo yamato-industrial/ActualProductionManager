@@ -33,11 +33,11 @@
                 <form method="get" class="form-inline" style="gap: 10px;">
                     <div class="form-group">
                         <label for="searchLineCode" class="mr-2">ラインコード:</label>
-                        <input type="text" id="searchLineCode" name="searchLineCode" class="form-control form-control-sm" value="@searchLineCode" placeholder="検索...">
+                        <input type="text" id="searchLineCode" name="searchLineCode" class="form-control form-control-sm" value="@searchLineCode">
                     </div>
                     <div class="form-group">
                         <label for="searchItemCode" class="mr-2">品目コード:</label>
-                        <input type="text" id="searchItemCode" name="searchItemCode" class="form-control form-control-sm" value="@searchItemCode" placeholder="検索...">
+                        <input type="text" id="searchItemCode" name="searchItemCode" class="form-control form-control-sm" value="@searchItemCode">
                     </div>
                     <button type="submit" class="btn btn-info btn-sm">
                         <i class="fas fa-search"></i> 検索
@@ -151,6 +151,7 @@
                     </tbody>
                 </table>
 
+                <!-- ページング -->
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <form method="get" class="form-inline">
                         <input type="hidden" name="searchLineCode" value="@searchLineCode" />

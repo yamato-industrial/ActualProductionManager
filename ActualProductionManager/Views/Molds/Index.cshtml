@@ -1,0 +1,171 @@
+﻿@model List<ActualProductionManager.Controllers.MoldViewModel>
+
+@{
+    ViewData["Title"] = "金型";
+    var searchCode = ViewData["SearchCode"]?.ToString();
+    var searchName = ViewData["SearchName"]?.ToString();
+    var SearchStorageLocation = ViewData["SearchStorageLocation"]?.ToString();
+    var sortBy = ViewData["SortBy"]?.ToString() ?? "code";
+    var sortOrder = ViewData["SortOrder"]?.ToString() ?? "asc";
+    var pageSize = (int)(ViewData["PageSize"] ?? 10);
+    var currentPage = (int)(ViewData["Page"] ?? 1);
+    var totalCount = (int)(ViewData["TotalCount"] ?? 0);
+    var totalPages = (int)(ViewData["TotalPages"] ?? 1);
+    var pageSizes = new[] { 10, 25, 50, 100 };
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">金型一覧</h3>
+                <div class="card-tools">
+                    <a href="@Url.Action("Create")" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> 新規登録
+                    </a>
+                    <a href="@Url.Action("Import")" class="btn btn-success btn-sm">
+                        <i class="fas fa-file-csv"></i> CSV取込
+                    </a>
+                </div>
+            </div>
+
+            <!-- フィルタセクション -->
+            <div class="card-body bg-light">
+                <form method="get" class="form-inline" style="gap: 10px;">
+                    <div class="form-group">
+                        <label for="searchCode" class="mr-2">金型コード:</label>
+                        <input type="text" id="searchCode" name="searchCode" class="form-control form-control-sm" value="@searchCode" />
+                    </div>
+                    <div class="form-group">
+                        <label for="searchName" class="mr-2">金型名称:</label>
+                        <input type="text" id="searchName" name="searchName" class="form-control form-control-sm" value="@searchName" />
+                    </div>
+                    <div class="form-group">
+                        <label for="searchName" class="mr-2">置場:</label>
+                        <input type="text" id="searchName" name="searchName" class="form-control form-control-sm" value="@searchName" />
+                    </div>
+                    <button type="submit" class="btn btn-info btn-sm">
+                        <i class="fas fa-search"></i>検索
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-redo"></i> リセット
+                    </a>
+                </form>
+            </div>
+
+            <!-- テーブル -->
+            <div class="card-body">
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>金型コード</th>
+                            <th>
+                                <a href="@Url.Action("Index", new { sortBy = "name", sortOrder = sortBy == "name" && sortOrder == "asc" ? "desc" : "asc" })">
+                                    金型名称
+                                    @if (sortBy == "name")
+                                    {
+                                        <i class="fas @(sortOrder == "asc" ? "up" : "down")"></i>
+                                    }
+                                </a>
+                            </th>
+                            <th>
+                                <a href="@Url.Action("Index", new { sortBy = "storageLocation", sortOrder = sortBy == "storageLocation" && sortOrder == "asc" ? "desc" : "asc" })">
+                                    置場
+                                    @if (sortBy == "storageLocation")
+                                    {
+                                        <i class="fas @(sortOrder == "asc" ? "up" : "down")"></i>
+                                    }
+                            </th>
+                            <th>注意ショット数</th>
+                            <th>交換ショット数</th>
+                            <th>備考</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
+                        {
+                            @foreach (var mold in Model)
+                            {
+                                <tr>
+                                    <td>@mold.Code</td>
+                                    <td>@mold.Name</td>
+                                    <td>@mold.StorageLocation</td>
+                                    <td>
+                                        <form method="post" action=@Url.Action("Update") style="display:inline;">
+                                            <input type="hidden" name="code" value="@mold.Code" />
+                                            <input type="hidden" name="name" value="@mold.Name" />
+                                            <input type="hidden" name="storageLocation" value="@mold.StorageLocation" />
+                                            <input type="hidden" name="replacementShots" value="@mold.ReplacementShots" />
+                                            <input type="hidden" name="remarks" value="@mold.Remarks" />
+                                            <div class="input-group input-group-sm" style="width: 120px;">
+                                                <input type="number" class="form-control" name="warningShots" value="@mold.WarningShots" min="0" />
+                                                <span class="input-group-append">
+                                                    <button type="submit" class="btn btn-info btn-flat">
+                                                        <i class="fas fa-save"></i>
+                                                    </button>
+                                                </span>
+                                            </div>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form method="post" action=@Url.Action("Update") style="display:inline;">
+                                            <input type="hidden" name="code" value="@mold.Code" />
+                                            <input type="hidden" name="name" value="@mold.Name" />
+                                            <input type="hidden" name="storageLocation" value="@mold.StorageLocation" />
+                                            <input type="hidden" name="warningShots" value="@mold.WarningShots" />
+                                            <input type="hidden" name="remarks" value="@mold.Remarks" />
+                                            <div class="input-group input-group-sm" style="width: 120px;">
+                                                <input type="number" class="form-control" name="replacementShots" value="@mold.ReplacementShots" min="0" />
+                                                <span class="input-group-append">
+                                                    <button type="submit" class="btn btn-info btn-flat">
+                                                        <i class="fas fa-save"></i>
+                                                    </button>
+                                                </span>
+                                            </div>
+                                        </form>
+                                    </td>
+                                    <td>@mold.Remarks</td>
+                                    <td>
+                                        <a href="@Url.Action("Delete", new { code = mold.Code })" class="btn btn-danger btn-sm" onclick="return confirm('削除してよろしいですか？')">
+                                            <i class="fas fa-trash"></i> 削除
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">表示対象のデータがありません</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <!-- ページング -->
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <form method="get" class="form-inline">
+                        <input type="hidden" name="searchCode" value="@searchCode" />
+                        <input type="hidden" name="searchName" value="@searchName" />
+                        <input type="hidden" name="sortBy" value="@sortBy" />
+                        <input type="hidden" name="sortOrder" value="@sortOrder" />
+                        <label for="pageSize" class="mr-2">表示件数:</label>
+                        <select id="pageSize" name="pageSize" class="form-control form-control-sm" onchange="this.form.submit()">
+                            @foreach (var size in pageSizes)
+                            {
+                                <option value="@size" selected="@(size == pageSize)">@size 件</option>
+                            }
+                        </select>
+                    </form>
+                    <div class="text-muted text-sm">@totalCount 件中@(((currentPage - 1) * pageSize) + (Model.Any() ? 1 : 0)) - @(Math.Min(currentPage * pageSize, totalCount)) 件を表示</div>
+                    <ul class="pagination pagination-sm m-0">
+                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchCode, searchName, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a></li>
+                        <li class="page-item disabled"><span class="page-link">@currentPage / @totalPages</span></li>
+                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchCode, searchName, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

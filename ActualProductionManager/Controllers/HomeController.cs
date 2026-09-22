@@ -34,14 +34,10 @@ namespace ActualProductionManager.Controllers
         /// <returns>ホームページビュー。</returns>
         public IActionResult Index()
         {
-            // 実行環境名（Development または Production）を取得
             var environmentName = _env.EnvironmentName;
-            // 設定ファイルからスキーマ名を取得
             var schema = _configuration["Database:Schema"];
-            // 設定ファイルから接続文字列を取得
             var connectionString = _configuration["Database:ConnectionString"];
 
-            // ビューで使用するデータを ViewData に格納
             ViewData["EnvironmentName"] = environmentName;
             ViewData["Schema"] = schema;
             ViewData["ConnectionString"] = connectionString;

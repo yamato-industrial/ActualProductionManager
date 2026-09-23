@@ -20,10 +20,10 @@
             <div class="card-header">
                 <h3 class="card-title">金型一覧</h3>
                 <div class="card-tools">
-                    <a href="@Url.Action("Create")" class="btn btn-primary btn-sm">
+                    <a href="@Url.Action("Create")" class="btn btn-primary btn-sm mr-2">
                         <i class="fas fa-plus"></i> 新規登録
                     </a>
-                    <a href="@Url.Action("Import")" class="btn btn-success btn-sm">
+                    <a href="@Url.Action("Import")" class="btn btn-success btn-sm mr-2">
                         <i class="fas fa-file-csv"></i> CSV取込
                     </a>
                 </div>
@@ -60,9 +60,9 @@
                         <tr>
                             <th>金型コード</th>
                             <th>
-                                <a href="@Url.Action("Index", new { sortBy = "name", sortOrder = sortBy == "name" && sortOrder == "asc" ? "desc" : "asc" })">
+                                <a href="@Url.Action("Index", new { sortBy = "code", sortOrder = sortBy == "code" && sortOrder == "asc" ? "desc" : "asc" })">
                                     金型名称
-                                    @if (sortBy == "name")
+                                    @if (sortBy == "code")
                                     {
                                         <i class="fas @(sortOrder == "asc" ? "up" : "down")"></i>
                                     }
@@ -88,13 +88,13 @@
                             @foreach (var mold in Model)
                             {
                                 <tr>
-                                    <td>@mold.Code</td>
-                                    <td>@mold.Name</td>
+                                    <td>@mold.MoldCode</td>
+                                    <td>@mold.MoldName</td>
                                     <td>@mold.StorageLocation</td>
                                     <td>
                                         <form method="post" action=@Url.Action("Update") style="display:inline;">
-                                            <input type="hidden" name="code" value="@mold.Code" />
-                                            <input type="hidden" name="name" value="@mold.Name" />
+                                            <input type="hidden" name="code" value="@mold.MoldCode" />
+                                            <input type="hidden" name="name" value="@mold.MoldName" />
                                             <input type="hidden" name="storageLocation" value="@mold.StorageLocation" />
                                             <input type="hidden" name="replacementShots" value="@mold.ReplacementShots" />
                                             <input type="hidden" name="remarks" value="@mold.Remarks" />
@@ -110,8 +110,8 @@
                                     </td>
                                     <td>
                                         <form method="post" action=@Url.Action("Update") style="display:inline;">
-                                            <input type="hidden" name="code" value="@mold.Code" />
-                                            <input type="hidden" name="name" value="@mold.Name" />
+                                            <input type="hidden" name="code" value="@mold.MoldCode" />
+                                            <input type="hidden" name="name" value="@mold.MoldName" />
                                             <input type="hidden" name="storageLocation" value="@mold.StorageLocation" />
                                             <input type="hidden" name="warningShots" value="@mold.WarningShots" />
                                             <input type="hidden" name="remarks" value="@mold.Remarks" />
@@ -127,7 +127,7 @@
                                     </td>
                                     <td>@mold.Remarks</td>
                                     <td>
-                                        <a href="@Url.Action("Delete", new { code = mold.Code })" class="btn btn-danger btn-sm" onclick="return confirm('削除してよろしいですか？')">
+                                        <a href="@Url.Action("Delete", new { code = mold.MoldCode })" class="btn btn-danger btn-sm" onclick="return confirm('削除してよろしいですか？')">
                                             <i class="fas fa-trash"></i> 削除
                                         </a>
                                     </td>

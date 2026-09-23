@@ -90,8 +90,8 @@ namespace ActualProductionManager.Controllers
 
                 var viewModels = molds.Select(c => new MoldViewModel
                 {
-                    Code = c.Code,
-                    Name = c.Name,
+                    MoldCode = c.Code,
+                    MoldName = c.Name,
                     StorageLocation = c.StorageLocation,
                     WarningShots = c.WarningShots,
                     ReplacementShots = c.ReplacementShots,
@@ -203,9 +203,7 @@ namespace ActualProductionManager.Controllers
             {
                 code = code?.Trim() ?? string.Empty;
 
-                var mold = await _context.Molds
-                    .FirstOrDefaultAsync(m => m.Code == code);
-
+                var mold = await _context.Molds.FirstOrDefaultAsync(m => m.Code == code);
                 if (mold == null)
                 {
                     _logger.LogWarning("削除対象の金型が見つかりません: {Code}", code);
@@ -256,8 +254,8 @@ namespace ActualProductionManager.Controllers
                 NormalizeRegistrationModel(model);
 
                 ValidateMold(
-                    model.Code,
-                    model.Name,
+                    model.MoldCode,
+                    model.MoldName,
                     model.WarningShots,
                     model.ReplacementShots);
 
@@ -266,17 +264,17 @@ namespace ActualProductionManager.Controllers
                     return View("Create", model);
                 }
 
-                var exists = await _context.Molds.AnyAsync(m => m.Code == model.Code);
+                var exists = await _context.Molds.AnyAsync(m => m.Code == model.MoldCode);
                 if (exists)
                 {
-                    ModelState.AddModelError(nameof(model.Code), "この金型コードは既に登録されています。");
+                    ModelState.AddModelError(nameof(model.MoldCode), "この金型コードは既に登録されています。");
                     return View("Create", model);
                 }
 
                 var mold = new Mold
                 {
-                    Code = model.Code,
-                    Name = model.Name,
+                    Code = model.MoldCode,
+                    Name = model.MoldName,
                     StorageLocation = model.StorageLocation,
                     WarningShots = model.WarningShots,
                     ReplacementShots = model.ReplacementShots,
@@ -288,13 +286,13 @@ namespace ActualProductionManager.Controllers
                 _context.Molds.Add(mold);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("金型を登録しました: {Code}", model.Code);
+                _logger.LogInformation("金型を登録しました: {Code}", model.MoldCode);
                 TempData["SuccessMessage"] = "登録しました。";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "金型登録エラー: {Code}", model.Code);
+                _logger.LogError(ex, "金型登録エラー: {Code}", model.MoldCode);
                 TempData["ErrorMessage"] = $"登録エラー: {ex.Message}";
                 return View("Create", model);
             }
@@ -490,8 +488,8 @@ namespace ActualProductionManager.Controllers
         private static void NormalizeRegistrationModel(
             MoldRegistrationViewModel model)
         {
-            model.Code = model.Code?.Trim() ?? string.Empty;
-            model.Name = model.Name?.Trim() ?? string.Empty;
+            model.MoldCode = model.MoldCode?.Trim() ?? string.Empty;
+            model.MoldName = model.MoldName?.Trim() ?? string.Empty;
             model.StorageLocation =
                 NormalizeOptional(model.StorageLocation);
             model.Remarks = NormalizeOptional(model.Remarks);
@@ -519,14 +517,14 @@ namespace ActualProductionManager.Controllers
             if (string.IsNullOrWhiteSpace(code))
             {
                 ModelState.AddModelError(
-                    nameof(MoldRegistrationViewModel.Code),
+                    nameof(MoldRegistrationViewModel.MoldCode),
                     "金型コードは必須です。");
             }
 
             if (string.IsNullOrWhiteSpace(name))
             {
                 ModelState.AddModelError(
-                    nameof(MoldRegistrationViewModel.Name),
+                    nameof(MoldRegistrationViewModel.MoldName),
                     "金型名称は必須です。");
             }
 
@@ -707,30 +705,30 @@ namespace ActualProductionManager.Controllers
     }
 
     /// <summary>
-    /// 金型登録画面で使用するビューモデル。
-    /// </summary>
-    public class MoldRegistrationViewModel
-    {
-        public string Code { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string? StorageLocation { get; set; }
-        public long WarningShots { get; set; }
-        public long ReplacementShots { get; set; }
-        public string? Remarks { get; set; }
-    }
-
-    /// <summary>
     /// 金型一覧画面で使用するビューモデル。
     /// </summary>
     public class MoldViewModel
     {
-        public string Code { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
+        public string MoldCode { get; set; } = string.Empty;
+        public string MoldName { get; set; } = string.Empty;
         public string? StorageLocation { get; set; }
         public long WarningShots { get; set; }
         public long ReplacementShots { get; set; }
         public string? Remarks { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+    }
+
+    /// <summary>
+    /// 金型登録画面で使用するビューモデル。
+    /// </summary>
+    public class MoldRegistrationViewModel
+    {
+        public string MoldCode { get; set; } = string.Empty;
+        public string MoldName { get; set; } = string.Empty;
+        public string? StorageLocation { get; set; }
+        public long WarningShots { get; set; }
+        public long ReplacementShots { get; set; }
+        public string? Remarks { get; set; }
     }
 }

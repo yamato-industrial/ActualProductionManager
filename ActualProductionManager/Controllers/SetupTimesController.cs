@@ -72,7 +72,6 @@ namespace ActualProductionManager.Controllers
                     pageSize = 10;
                 }
 
-                page = Math.Max(page, 1);
                 var totalCount = await query.CountAsync();
                 var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
                 page = Math.Min(page, totalPages);
@@ -531,18 +530,6 @@ namespace ActualProductionManager.Controllers
     }
 
     /// <summary>
-    /// 段取り時間登録画面で使用するビューモデル。
-    /// 未登録のラインと品目の組み合わせ情報を表示するために使用します。
-    /// </summary>
-    public class SetupTimeRegistrationViewModel
-    {
-        public string LineCode { get; set; } = string.Empty;
-        public string LineName { get; set; } = string.Empty;
-        public string ItemCode { get; set; } = string.Empty;
-        public string ItemName { get; set; } = string.Empty;
-    }
-
-    /// <summary>
     /// 段取り時間一覧画面で使用するビューモデル。
     /// 登録済みの段取り時間情報を表示するために使用します。
     /// </summary>
@@ -554,5 +541,17 @@ namespace ActualProductionManager.Controllers
         public string ItemName { get; set; } = string.Empty;
         public int TargetSetupTimeSeconds { get; set; }
         public int TargetSetupTimeMinutes { get; set; }
+    }
+
+    /// <summary>
+    /// 段取り時間登録画面で使用するビューモデル。
+    /// 未登録のラインと品目の組み合わせ情報を表示するために使用します。
+    /// </summary>
+    public class SetupTimeRegistrationViewModel
+    {
+        public string LineCode { get; set; } = string.Empty;
+        public string LineName { get; set; } = string.Empty;
+        public string ItemCode { get; set; } = string.Empty;
+        public string ItemName { get; set; } = string.Empty;
     }
 }

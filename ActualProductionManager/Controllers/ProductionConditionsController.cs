@@ -72,7 +72,6 @@ namespace ActualProductionManager.Controllers
                     pageSize = 10;
                 }
 
-                page = Math.Max(page, 1);
                 var totalCount = await query.CountAsync();
                 var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
                 page = Math.Min(page, totalPages);
@@ -536,17 +535,6 @@ namespace ActualProductionManager.Controllers
             }
         }
     }
-    /// <summary>
-    /// 生産条件登録画面で使用するビューモデル。
-    /// 未登録のラインと品目の組み合わせ情報を表示するために使用します。
-    /// </summary>
-    public class ProductionConditionRegistrationViewModel
-    {
-        public string LineCode { get; set; } = string.Empty;
-        public string ItemCode { get; set; } = string.Empty;
-        public int TargetCycleTime { get; set; }
-        public int PiecesPerCycle { get; set; }
-    }
 
     /// <summary>
     /// 生産条件一覧画面で使用するビューモデル。
@@ -558,6 +546,17 @@ namespace ActualProductionManager.Controllers
         public string LineName { get; set; } = string.Empty;
         public string ItemCode { get; set; } = string.Empty;
         public string ItemName { get; set; } = string.Empty;
+        public int TargetCycleTime { get; set; }
+        public int PiecesPerCycle { get; set; }
+    }
+    /// <summary>
+    /// 生産条件登録画面で使用するビューモデル。
+    /// 未登録のラインと品目の組み合わせ情報を表示するために使用します。
+    /// </summary>
+    public class ProductionConditionRegistrationViewModel
+    {
+        public string LineCode { get; set; } = string.Empty;
+        public string ItemCode { get; set; } = string.Empty;
         public int TargetCycleTime { get; set; }
         public int PiecesPerCycle { get; set; }
     }

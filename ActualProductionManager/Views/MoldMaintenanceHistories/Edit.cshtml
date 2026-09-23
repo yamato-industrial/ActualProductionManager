@@ -1,0 +1,41 @@
+﻿@{
+    ViewData["Title"] = "金型修理履歴 - 編集";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">金型修理履歴編集</h3>
+            </div>
+            <form id="registrationForm" method="post" action="@Url.Action("Edit", "MoldMaintenanceHistories")">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>金型コード</label>
+                        <input type="text" class="form-control" value="@Model.MoldCode" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label>金型名称</label>
+                        <input type="text" class="form-control" value="@Model.MoldName" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label for="maintenanceDate">修理日時<span class="text-danger">*</span></label>
+                        <input type="datetime-local" id="maintenanceDate" name="maintenanceDate" class="form-control" value="@Model.MaintenanceDate.ToString("yyyy-MM-ddTHH:mm")" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="maintenanceShots">修理時ショット数</label>
+                        <input type="number" id="maintenanceShots" name="maintenanceShots" class="form-control" value="@Model.MaintenanceShots" min="0" />
+                    </div>
+                    <div class="form-group">
+                        <label for="remarks">修理内容・備考</label>
+                        <textarea id="remarks" name="remarks" class="form-control" rows="5">@Model.Remarks</textarea>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">更新</button>
+                    <a href="@Url.Action("Index", "MoldMaintenanceHistories")" class="btn btn-secondary">キャンセル</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

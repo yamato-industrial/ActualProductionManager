@@ -1,0 +1,141 @@
+﻿@model List<ActualProductionManager.Controllers.MoldMaintenanceHistoryViewModel>
+
+@{
+    ViewData["Title"] = "金型修理履歴";
+
+    var searchMoldCode = ViewData["SearchMoldCode"]?.ToString();
+    var searchMoldName = ViewData["SearchMoldName"]?.ToString();
+    var fromDate = ViewData["FromDate"] is DateTime fromDateValue ? fromDateValue.ToString("yyyy-MM-dd") : string.Empty;
+    var toDate = ViewData["ToDate"] is DateTime toDateValue ? toDateValue.ToString("yyyy-MM-dd") : string.Empty;
+    var pageSize = (int)(ViewData["PageSize"] ?? 10);
+    var currentPage = (int)(ViewData["Page"] ?? 1);
+    var totalCount = (int)(ViewData["TotalCount"] ?? 0);
+    var totalPages = (int)(ViewData["TotalPages"] ?? 1);
+    var pageSizes = new[] { 10, 25, 50, 100 };
+    var firstItemNumber = Model.Any() ? ((currentPage - 1) * pageSize) + 1 : 0;
+    var lastItemNumber = Model.Any() ? Math.Min(currentPage * pageSize, totalCount) : 0;
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">金型修理履歴一覧</h3>
+                <div class="card-tools">
+                    <a href="@Url.Action("Create")" class="btn btn-primary btn-sm mr-2">
+                        <i class="fas fa-plus"></i>新規登録
+                    </a>
+                </div>
+            </div>
+
+            <!-- フィルタセクション -->
+            <div class="card-body bg-light">
+                <form method="get" class="form-inline" style="gap: 10px;">
+                    <div class="form-group">
+                        <label for="searchMoldCode" class="mr-2">金型コード:</label>
+                        <input type="text" id="searchMoldCode" name="searchMoldCode" class="form-control form-control-sm" value="@searchMoldCode" />
+                    </div>
+                    <div class="form-group">
+                        <label for="searchMoldName" class="mr-2">金型名称:</label>
+                        <input type="text" id="searchMoldName" name="searchMoldName" class="form-control form-control-sm" value="@searchMoldName" />
+                    </div>
+                    <div class="form-group">
+                        <label for="fromDate" class="mr-2">修理日From:</label>
+                        <input type="date" id="fromDate" name="fromDate" class="form-control form-control-sm" value="@fromDate" />
+                    </div>
+                    <div class="form-group">
+                        <label for="toDate" class="mr-2">修理日To:</label>
+                        <input type="date" id="toDate" name="toDate" class="form-control form-control-sm" value="@toDate" />
+                    </div>
+                    <button type="submit" class="btn btn-info btn-sm">
+                        <i class="fas fa-search"></i>検索
+                    </button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-redo"></i>リセット
+                    </a>
+
+                </form>
+            </div>
+
+            <!-- テーブル -->
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>金型コード</th>
+                                <th>金型名称</th>
+                                <th>修理日時</th>
+                                <th>修理時ショット数</th>
+                                <th>修理内容・備考</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Any())
+                            {
+                                @foreach (var history in Model)
+                                {
+                                    <tr>
+                                        <td>@history.MoldCode</td>
+                                        <td>@history.MoldName</td>
+                                        <td>@history.MaintenanceDate.ToString("yyyy/MM/dd HH:mm")</td>
+                                        <td class="text-right">
+                                            @if (history.MaintenanceShots.HasValue)
+                                            {
+                                                @history.MaintenanceShots.Value.ToString("N0")
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">未入力</span>
+                                            }
+                                        </td>
+                                        <td>@history.Remarks</td>
+                                        <td class="text-nowrap">
+                                            <a href="@Url.Action("Edit", new { code = history.MoldCode })" class="btn btn-info btn-sm mr-2">
+                                                <i class="fas fa-edit"></i>編集
+                                            </a>
+                                            <a href="@Url.Action("Delete", new { code = history.MoldCode })" class="btn btn-danger btn-sm mr-2" onclick="return confirm('削除してよろしいですか？')">
+                                                <i class="fas fa-trash"></i> 削除
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">表示対象のデータがありません</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ページング -->
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <form method="get" class="form-inline">
+                        <input type="hidden" name="searchMoldCode" value="@searchMoldCode" />
+                        <input type="hidden" name="searchMoldName" value="@searchMoldName" />
+                        <input type="hidden" name="fromDate" value="@fromDate" />
+                        <input type="hidden" name="toDate" value="@toDate" />
+                        <input type="hidden" name="page" value="1" />
+                        <label for="pageSize" class="mr-2">表示件数:</label>
+                        <select id="pageSize" name="pageSize" class="form-control form-control-sm" onchange="this.form.submit()">
+                            @foreach (var size in pageSizes)
+                            {
+                                <option value="@size" selected="@(size == pageSize)">@size 件</option>
+                            }
+                        </select>
+                    </form>
+                    <div class="text-muted text-sm">@totalCount 件中@(((currentPage - 1) * pageSize) + (Model.Any() ? 1 : 0)) - @(Math.Min(currentPage * pageSize, totalCount)) 件を表示</div>
+                    <ul class="pagination pagination-sm m-0">
+                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchMoldCode, searchMoldName, fromDate, toDate, pageSize, page = currentPage - 1 })">前へ</a></li>
+                        <li class="page-item disabled"><span class="page-link">@currentPage / @totalPages</span></li>
+                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchMoldCode, searchMoldName, fromDate, toDate, pageSize, page = currentPage + 1 })">次へ</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -29,7 +29,6 @@ public partial class ActualProductionContext : DbContext
     public virtual DbSet<ProductionCondition> ProductionConditions { get; set; }
     public virtual DbSet<SetupTime> SetupTimes { get; set; }
     public virtual DbSet<Mold> Molds { get; set; }
-    public virtual DbSet<MoldShotTransaction> MoldShotTransactions { get; set; }
     public virtual DbSet<MoldMaintenanceHistory> MoldMaintenanceHistories { get; set; }
 
     /// <summary>
@@ -105,6 +104,20 @@ public partial class ActualProductionContext : DbContext
             entity.Property(e => e.Remarks).HasColumnName("remarks");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+        });
+
+        modelBuilder.Entity<MoldMaintenanceHistory>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_mold_maintenance_histories_01");
+            entity.ToTable("mold_maintenance_histories", Schema);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.MoldCode).HasColumnName("mold_code");
+            entity.Property(e => e.MaintenanceDate).HasColumnName("maintenance_date");
+            entity.Property(e => e.MaintenanceShots).HasColumnName("maintenance_shots");
+            entity.Property(e => e.Remarks).HasColumnName("remarks");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.HasOne<Mold>().WithMany().HasForeignKey(e => e.MoldCode).HasConstraintName("fk_mold_maintenance_histories_01");
         });
 
         OnModelCreatingPartial(modelBuilder);

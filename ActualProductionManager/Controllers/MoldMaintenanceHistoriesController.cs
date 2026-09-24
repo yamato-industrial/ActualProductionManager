@@ -33,6 +33,8 @@ namespace ActualProductionManager.Controllers
             string? searchMoldName,
             DateTime? fromDate,
             DateTime? toDate,
+            string sortBy = "maintenanceDate",
+            string sortOrder = "desc",
             int pageSize = 10,
             int page = 1)
         {
@@ -78,6 +80,12 @@ namespace ActualProductionManager.Controllers
                     query = query.Where(x => x.MaintenanceDate < nextDateUtc);
                 }
 
+                query = sortBy switch
+                {
+                    "moldName" => sortOrder == "asc" ? query.OrderBy(x => x.MoldName) : query.OrderByDescending(x => x.MoldName),
+                    _ => sortOrder == "asc" ? query.OrderByDescending(x => x.MaintenanceDate) : query.OrderBy(x => x.MaintenanceDate)
+                };
+
                 var totalCount = await query.CountAsync();
                 var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
                 page = Math.Min(page, totalPages);
@@ -87,6 +95,8 @@ namespace ActualProductionManager.Controllers
                 ViewData["SearchMoldCode"] = searchMoldCode;
                 ViewData["FromDate"] = fromDate;
                 ViewData["ToDate"] = toDate;
+                ViewData["SortBy"] = sortBy;
+                ViewData["SortOrder"] = sortOrder;
                 ViewData["PageSize"] = pageSize;
                 ViewData["Page"] = page;
                 ViewData["TotalCount"] = totalCount;

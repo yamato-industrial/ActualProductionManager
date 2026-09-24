@@ -69,9 +69,7 @@ namespace ActualProductionManager.Controllers
 
                 query = sortBy switch
                 {
-                    "code" => sortOrder == "asc" ? query.OrderBy(c => c.Code) : query.OrderByDescending(c => c.Code),
-                    "name" => sortOrder == "asc" ? query.OrderBy(c => c.Name) : query.OrderByDescending(c => c.Name),
-                    "storageLocation" => sortOrder == "asc" ? query.OrderBy(c => c.StorageLocation) : query.OrderByDescending(c => c.StorageLocation),
+                    "moldName" => sortOrder == "asc" ? query.OrderBy(c => c.Name) : query.OrderByDescending(c => c.Name),
                     _ => sortOrder == "asc" ? query.OrderBy(c => c.StorageLocation) : query.OrderByDescending(c => c.StorageLocation)
                 };
 

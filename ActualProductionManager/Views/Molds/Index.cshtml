@@ -60,21 +60,22 @@
                         <tr>
                             <th>金型コード</th>
                             <th>
-                                <a href="@Url.Action("Index", new { sortBy = "code", sortOrder = sortBy == "code" && sortOrder == "asc" ? "desc" : "asc" })">
+                                <a href="@Url.Action("Index", new { searchCode, searchName, SearchStorageLocation, sortBy = "moldName", sortOrder = (sortBy == "moldName" && sortOrder == "asc") ? "desc" : "asc" })">
                                     金型名称
-                                    @if (sortBy == "code")
+                                    @if (sortBy == "moldName")
                                     {
-                                        <i class="fas @(sortOrder == "asc" ? "up" : "down")"></i>
+                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
                                     }
                                 </a>
                             </th>
                             <th>
-                                <a href="@Url.Action("Index", new { sortBy = "storageLocation", sortOrder = sortBy == "storageLocation" && sortOrder == "asc" ? "desc" : "asc" })">
+                                <a href="@Url.Action("Index", new { searchCode, searchName, SearchStorageLocation, sortBy = "storageLocation", sortOrder = (sortBy == "storageLocation" && sortOrder == "asc") ? "desc" : "asc" })">
                                     置場
                                     @if (sortBy == "storageLocation")
                                     {
-                                        <i class="fas @(sortOrder == "asc" ? "up" : "down")"></i>
+                                        <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
                                     }
+                                </a>
                             </th>
                             <th>注意ショット数</th>
                             <th>交換ショット数</th>
@@ -160,9 +161,9 @@
                     </form>
                     <div class="text-muted text-sm">@totalCount 件中@(((currentPage - 1) * pageSize) + (Model.Any() ? 1 : 0)) - @(Math.Min(currentPage * pageSize, totalCount)) 件を表示</div>
                     <ul class="pagination pagination-sm m-0">
-                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchCode, searchName, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a></li>
+                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchCode, searchName, SearchStorageLocation, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a></li>
                         <li class="page-item disabled"><span class="page-link">@currentPage / @totalPages</span></li>
-                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchCode, searchName, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a></li>
+                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchCode, searchName, SearchStorageLocation, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a></li>
                     </ul>
                 </div>
             </div>

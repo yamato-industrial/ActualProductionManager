@@ -7,6 +7,8 @@
     var searchMoldName = ViewData["SearchMoldName"]?.ToString();
     var fromDate = ViewData["FromDate"] is DateTime fromDateValue ? fromDateValue.ToString("yyyy-MM-dd") : string.Empty;
     var toDate = ViewData["ToDate"] is DateTime toDateValue ? toDateValue.ToString("yyyy-MM-dd") : string.Empty;
+    var sortBy = ViewData["SortBy"]?.ToString() ?? "maintenanceDate";
+    var sortOrder = ViewData["SortOrder"]?.ToString() ?? "desc";
     var pageSize = (int)(ViewData["PageSize"] ?? 10);
     var currentPage = (int)(ViewData["Page"] ?? 1);
     var totalCount = (int)(ViewData["TotalCount"] ?? 0);
@@ -64,8 +66,24 @@
                         <thead>
                             <tr>
                                 <th>金型コード</th>
-                                <th>金型名称</th>
-                                <th>修理日時</th>
+                                <th>
+                                    <a href="@Url.Action("Index", new { searchMoldCode, searchMoldName, fromDate, toDate, sortBy = "moldName", sortOrder = (sortBy == "moldName" && sortOrder == "asc") ? "desc" : "asc" })">
+                                        金型名称
+                                        @if (sortBy == "moldName")
+                                        {
+                                            <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
+                                        }
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="@Url.Action("Index", new { searchMoldCode, searchMoldName, fromDate, toDate, sortBy = "maintenanceDate", sortOrder = (sortBy == "maintenanceDate" && sortOrder == "asc") ? "desc" : "asc" })">
+                                        修理日時
+                                        @if (sortBy == "maintenanceDate")
+                                        {
+                                            <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
+                                        }
+                                    </a>
+                                </th>
                                 <th>修理時ショット数</th>
                                 <th>修理内容・備考</th>
                                 <th>操作</th>
@@ -92,10 +110,10 @@
                                         </td>
                                         <td>@history.Remarks</td>
                                         <td class="text-nowrap">
-                                            <a href="@Url.Action("Edit", new { code = history.MoldCode })" class="btn btn-info btn-sm mr-2">
+                                            <a href="@Url.Action("Edit")" class="btn btn-info btn-sm mr-2">
                                                 <i class="fas fa-edit"></i>編集
                                             </a>
-                                            <a href="@Url.Action("Delete", new { code = history.MoldCode })" class="btn btn-danger btn-sm mr-2" onclick="return confirm('削除してよろしいですか？')">
+                                            <a href="@Url.Action("Delete", new { id = history.Id })" class="btn btn-danger btn-sm mr-2" onclick="return confirm('削除してよろしいですか？')">
                                                 <i class="fas fa-trash"></i> 削除
                                             </a>
                                         </td>
@@ -130,9 +148,9 @@
                     </form>
                     <div class="text-muted text-sm">@totalCount 件中@(((currentPage - 1) * pageSize) + (Model.Any() ? 1 : 0)) - @(Math.Min(currentPage * pageSize, totalCount)) 件を表示</div>
                     <ul class="pagination pagination-sm m-0">
-                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchMoldCode, searchMoldName, fromDate, toDate, pageSize, page = currentPage - 1 })">前へ</a></li>
+                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchMoldCode, searchMoldName, fromDate, toDate, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a></li>
                         <li class="page-item disabled"><span class="page-link">@currentPage / @totalPages</span></li>
-                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchMoldCode, searchMoldName, fromDate, toDate, pageSize, page = currentPage + 1 })">次へ</a></li>
+                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchMoldCode, searchMoldName, fromDate, toDate, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a></li>
                     </ul>
                 </div>
             </div>

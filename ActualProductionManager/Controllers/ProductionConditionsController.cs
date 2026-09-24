@@ -222,9 +222,7 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Create));
                 }
 
-                var existingCondition = await _context.ProductionConditions
-                    .FirstOrDefaultAsync(c => c.LineCode == model.LineCode && c.ItemCode == model.ItemCode);
-
+                var existingCondition = await _context.ProductionConditions.FirstOrDefaultAsync(c => c.LineCode == model.LineCode && c.ItemCode == model.ItemCode);
                 if (existingCondition != null)
                 {
                     TempData["ErrorMessage"] = "このラインコードと品目コードの組み合わせは既に登録されています";

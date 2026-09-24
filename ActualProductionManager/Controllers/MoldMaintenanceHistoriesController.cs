@@ -2,6 +2,7 @@
 using ActualProductionManager.Models.Databases;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Metadata.Ecma335;
 
 namespace ActualProductionManager.Controllers
 {
@@ -245,39 +246,30 @@ namespace ActualProductionManager.Controllers
         /// <param name="remarks">備考。</param>
         /// <returns>一覧画面へのリダイレクト。</returns>
         [HttpPost]
-        public async Task<IActionResult> Update(
-            long id,
-            DateTime maintenanceDate,
-            long? maintenanceShots,
-            string? remarks)
+        public async Task<IActionResult> Update(MoldMaintenanceHistoryRegistrationViewModel model)
         {
             try
             {
-                var history = await _context.MoldMaintenanceHistories.FirstOrDefaultAsync(x => x.Id == id);
-                if (history == null)
-                {
-                    TempData["ErrorMessage"] = "更新対象が見つかりません";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                history.MaintenanceDate = maintenanceDate;
-                history.MaintenanceShots = maintenanceShots;
-                history.Remarks = remarks;
+                var history = await _context.MoldMaintenanceHistories.FirstOrDefaultAsync(x => x.Id == model.Id);
+                history.MaintenanceDate = DateTime.SpecifyKind(model.MaintenanceDate, DateTimeKind.Local).ToUniversalTime();
+                history.MaintenanceShots = model.MaintenanceShots;
+                history.Remarks = model.Remarks;
                 history.UpdatedAt = DateTime.UtcNow;
 
                 _context.MoldMaintenanceHistories.Update(history);
 
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("修理履歴を更新しました: {Id}", id);
+                _logger.LogInformation("修理履歴を更新しました: {Id}", model.Id);
                 TempData["SuccessMessage"] = "更新しました。";
+
+                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "修理履歴更新エラー: {Id}", id);
+                _logger.LogError(ex, "修理履歴更新エラー: {Id}", model.Id);
                 TempData["ErrorMessage"] = $"更新エラー: {ex.Message}";
+                return RedirectToAction(nameof(Edit));
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>

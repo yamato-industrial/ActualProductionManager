@@ -37,6 +37,7 @@ namespace ActualProductionManager.Controllers
         /// <param name="pageSize">1 ページあたりの表示件数。</param>
         /// <param name="page">表示ページ番号。</param>
         /// <returns>段取り時間一覧ビュー。</returns>
+        [HttpGet]
         public async Task<IActionResult> Index(
             string? searchLineCode,
             string? searchItemCode,
@@ -162,6 +163,7 @@ namespace ActualProductionManager.Controllers
         /// <param name="lineCode">ラインコード。</param>
         /// <param name="itemCode">品目コード。</param>
         /// <returns>一覧ページへのリダイレクト。</returns>
+        [HttpGet]
         public async Task<IActionResult> Delete(string lineCode, string itemCode)
         {
             try
@@ -195,6 +197,7 @@ namespace ActualProductionManager.Controllers
         /// 新規登録可能な段取り時間の候補（未登録のラインコードと品目コードの組み合わせ）を表示します。
         /// </summary>
         /// <returns>段取り新規登録ビュー。</returns>
+        [HttpGet]
         public IActionResult Create()
         {
             return View(new SetupTimeRegistrationViewModel());

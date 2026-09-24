@@ -39,6 +39,7 @@ namespace ActualProductionManager.Controllers
         /// <param name="pageSize">1ページあたりの表示件数。</param>
         /// <param name="page">表示ページ番号。</param>
         /// <returns>金型一覧ビュー。</returns>
+        [HttpGet]
         public async Task<IActionResult> Index(
             string? searchCode,
             string? searchName,
@@ -195,6 +196,7 @@ namespace ActualProductionManager.Controllers
         /// </remarks>
         /// <param name="code">金型コード。</param>
         /// <returns>金型一覧画面へのリダイレクト。</returns>
+        [HttpGet]
         public async Task<IActionResult> Delete(string code)
         {
             try
@@ -234,6 +236,7 @@ namespace ActualProductionManager.Controllers
         /// 金型の新規登録画面を表示します。
         /// </summary>
         /// <returns>金型新規登録ビュー。</returns>
+        [HttpGet]
         public IActionResult Create()
         {
             return View(new MoldRegistrationViewModel());

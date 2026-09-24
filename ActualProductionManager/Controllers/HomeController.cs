@@ -32,6 +32,7 @@ namespace ActualProductionManager.Controllers
         /// 現在の環境情報とデータベース接続情報をビューに渡します。
         /// </summary>
         /// <returns>ホームページビュー。</returns>
+        [HttpGet]
         public IActionResult Index()
         {
             var environmentName = _env.EnvironmentName;

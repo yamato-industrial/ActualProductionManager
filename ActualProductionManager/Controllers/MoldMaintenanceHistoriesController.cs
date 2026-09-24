@@ -28,6 +28,7 @@ namespace ActualProductionManager.Controllers
         /// <param name="pageSize">1ページあたりの表示件数。</param>
         /// <param name="page">表示ページ番号。</param>
         /// <returns>金型修理履歴一覧ビュー。</returns>
+        [HttpGet]
         public async Task<IActionResult> Index(
             string? searchMoldCode,
             string? searchMoldName,
@@ -117,6 +118,7 @@ namespace ActualProductionManager.Controllers
         /// </summary>
         /// <param name="id">金型修理履歴ID。</param>
         /// <returns>一覧画面へのリダイレクト。</returns>
+        [HttpGet]
         public async Task<IActionResult> Delete(long id)
         {
             try

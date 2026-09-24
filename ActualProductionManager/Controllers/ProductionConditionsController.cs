@@ -9,24 +9,10 @@ namespace ActualProductionManager.Controllers
     /// 生産条件（ラインあたりの品目ごとのサイクルタイムと個数設定）の管理機能を提供するコントローラー。
     /// 生産条件の一覧表示、登録、更新、削除、および CSV インポート機能を実装します。
     /// </summary>
-    public class ProductionConditionsController : Controller
+    /// <param name="context">データベースコンテキスト。</param>
+    /// <param name="logger">ロギングサービス。</param>
+    public class ProductionConditionsController(ActualProductionContext context, ILogger<ProductionConditionsController> logger) : Controller
     {
-        private readonly ActualProductionContext _context;
-        private readonly ILogger<ProductionConditionsController> _logger;
-
-        /// <summary>
-        /// ProductionConditionsController のコンストラクタ。
-        /// </summary>
-        /// <param name="context">データベースコンテキスト。</param>
-        /// <param name="logger">ロギングサービス。</param>
-        public ProductionConditionsController(
-            ActualProductionContext context,
-            ILogger<ProductionConditionsController> logger)
-        {
-            _context = context;
-            _logger = logger;
-        }
-
         /// <summary>
         /// 生産条件データを検索・ソート・ページネーション表示します。
         /// </summary>
@@ -48,7 +34,7 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var query = _context.ProductionConditions.AsQueryable();
+                var query = context.ProductionConditions.AsQueryable();
 
                 if (!string.IsNullOrEmpty(searchLineCode))
                 {
@@ -82,8 +68,8 @@ namespace ActualProductionManager.Controllers
                 var lineCodes = conditions.Select(x => x.LineCode).Distinct().ToList();
                 var itemCodes = conditions.Select(x => x.ItemCode).Distinct().ToList();
 
-                var lineNames = await _context.Lines.Where(line => lineCodes.Contains(line.Code)).ToDictionaryAsync(line => line.Code, line => line.Name);
-                var itemNames = await _context.Items.Where(item => itemCodes.Contains(item.Code)).ToDictionaryAsync(item => item.Code, item => item.Name);
+                var lineNames = await context.Lines.Where(line => lineCodes.Contains(line.Code)).ToDictionaryAsync(line => line.Code, line => line.Name);
+                var itemNames = await context.Items.Where(item => itemCodes.Contains(item.Code)).ToDictionaryAsync(item => item.Code, item => item.Name);
 
                 var viewModels = conditions.Select(c => new ProductionConditionViewModel
                 {
@@ -108,7 +94,7 @@ namespace ActualProductionManager.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "生産条件データ取得エラー");
+                logger.LogError(ex, "生産条件データ取得エラー");
                 TempData["ErrorMessage"] = $"データ取得エラー: {ex.Message}";
                 return View(new List<ProductionConditionViewModel>());
             }
@@ -131,12 +117,12 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var condition = await _context.ProductionConditions
+                var condition = await context.ProductionConditions
                     .FirstOrDefaultAsync(c => c.LineCode == lineCode && c.ItemCode == itemCode);
 
                 if (condition == null)
                 {
-                    _logger.LogWarning("更新対象の生産条件が見つかりません: {LineCode}-{ItemCode}", lineCode, itemCode);
+                    logger.LogWarning("更新対象の生産条件が見つかりません: {LineCode}-{ItemCode}", lineCode, itemCode);
                     TempData["ErrorMessage"] = "更新対象のデータが見つかりません";
                     return RedirectToAction(nameof(Index));
                 }
@@ -145,15 +131,15 @@ namespace ActualProductionManager.Controllers
                 condition.PiecesPerCycle = piecesPerCycle ?? condition.PiecesPerCycle;
                 condition.UpdatedAt = DateTime.UtcNow;
 
-                _context.ProductionConditions.Update(condition);
-                await _context.SaveChangesAsync();
+                context.ProductionConditions.Update(condition);
+                await context.SaveChangesAsync();
 
-                _logger.LogInformation("生産条件を更新しました: {LineCode}-{ItemCode}", lineCode, itemCode);
+                logger.LogInformation("生産条件を更新しました: {LineCode}-{ItemCode}", lineCode, itemCode);
                 TempData["SuccessMessage"] = "更新しました。";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "生産条件更新エラー: {LineCode}-{ItemCode}", lineCode, itemCode);
+                logger.LogError(ex, "生産条件更新エラー: {LineCode}-{ItemCode}", lineCode, itemCode);
                 TempData["ErrorMessage"] = $"更新エラー: {ex.Message}";
             }
 
@@ -171,25 +157,25 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var condition = await _context.ProductionConditions
+                var condition = await context.ProductionConditions
                     .FirstOrDefaultAsync(c => c.LineCode == lineCode && c.ItemCode == itemCode);
 
                 if (condition == null)
                 {
-                    _logger.LogWarning("削除対象の生産条件が見つかりません: {LineCode}-{ItemCode}", lineCode, itemCode);
+                    logger.LogWarning("削除対象の生産条件が見つかりません: {LineCode}-{ItemCode}", lineCode, itemCode);
                     TempData["ErrorMessage"] = "削除対象のデータが見つかりません";
                     return RedirectToAction(nameof(Index));
                 }
 
-                _context.ProductionConditions.Remove(condition);
-                await _context.SaveChangesAsync();
+                context.ProductionConditions.Remove(condition);
+                await context.SaveChangesAsync();
 
-                _logger.LogInformation("生産条件を削除しました: {LineCode}-{ItemCode}", lineCode, itemCode);
+                logger.LogInformation("生産条件を削除しました: {LineCode}-{ItemCode}", lineCode, itemCode);
                 TempData["SuccessMessage"] = "削除しました。";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "生産条件削除エラー: {LineCode}-{ItemCode}", lineCode, itemCode);
+                logger.LogError(ex, "生産条件削除エラー: {LineCode}-{ItemCode}", lineCode, itemCode);
                 TempData["ErrorMessage"] = $"削除エラー: {ex.Message}";
             }
 
@@ -222,7 +208,7 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Create));
                 }
 
-                var existingCondition = await _context.ProductionConditions.FirstOrDefaultAsync(c => c.LineCode == model.LineCode && c.ItemCode == model.ItemCode);
+                var existingCondition = await context.ProductionConditions.FirstOrDefaultAsync(c => c.LineCode == model.LineCode && c.ItemCode == model.ItemCode);
                 if (existingCondition != null)
                 {
                     TempData["ErrorMessage"] = "このラインコードと品目コードの組み合わせは既に登録されています";
@@ -239,16 +225,16 @@ namespace ActualProductionManager.Controllers
                     UpdatedAt = DateTime.UtcNow
                 };
 
-                _context.ProductionConditions.Add(condition);
-                await _context.SaveChangesAsync();
+                context.ProductionConditions.Add(condition);
+                await context.SaveChangesAsync();
 
-                _logger.LogInformation("生産条件を登録しました: {LineCode}-{ItemCode}", model.LineCode, model.ItemCode);
+                logger.LogInformation("生産条件を登録しました: {LineCode}-{ItemCode}", model.LineCode, model.ItemCode);
                 TempData["SuccessMessage"] = "登録しました。";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "生産条件登録エラー");
+                logger.LogError(ex, "生産条件登録エラー");
                 TempData["ErrorMessage"] = $"登録エラー: {ex.Message}";
                 return RedirectToAction(nameof(Create));
             }
@@ -325,8 +311,8 @@ namespace ActualProductionManager.Controllers
                         continue;
                     }
 
-                    var lineExists = await _context.Lines.AnyAsync(l => l.Code == lineCode);
-                    var itemExists = await _context.Items.AnyAsync(i => i.Code == itemCode);
+                    var lineExists = await context.Lines.AnyAsync(l => l.Code == lineCode);
+                    var itemExists = await context.Items.AnyAsync(i => i.Code == itemCode);
 
                     if (!lineExists)
                     {
@@ -363,9 +349,9 @@ namespace ActualProductionManager.Controllers
 
                 if (importMode == "replace")
                 {
-                    var existingConditions = await _context.ProductionConditions.ToListAsync();
-                    _context.ProductionConditions.RemoveRange(existingConditions);
-                    await _context.SaveChangesAsync();
+                    var existingConditions = await context.ProductionConditions.ToListAsync();
+                    context.ProductionConditions.RemoveRange(existingConditions);
+                    await context.SaveChangesAsync();
                 }
 
                 int insertCount = 0;
@@ -373,7 +359,7 @@ namespace ActualProductionManager.Controllers
 
                 foreach (var (lineCode, itemCode, targetCycleTime, piecesPerCycle) in importedRecords)
                 {
-                    var existing = await _context.ProductionConditions
+                    var existing = await context.ProductionConditions
                         .FirstOrDefaultAsync(c => c.LineCode == lineCode && c.ItemCode == itemCode);
 
                     if (existing != null)
@@ -381,7 +367,7 @@ namespace ActualProductionManager.Controllers
                         existing.TargetCycleTime = targetCycleTime;
                         existing.PiecesPerCycle = piecesPerCycle;
                         existing.UpdatedAt = DateTime.UtcNow;
-                        _context.ProductionConditions.Update(existing);
+                        context.ProductionConditions.Update(existing);
                         updateCount++;
                     }
                     else
@@ -395,21 +381,21 @@ namespace ActualProductionManager.Controllers
                             CreatedAt = DateTime.UtcNow,
                             UpdatedAt = DateTime.UtcNow
                         };
-                        _context.ProductionConditions.Add(newCondition);
+                        context.ProductionConditions.Add(newCondition);
                         insertCount++;
                     }
                 }
 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
 
                 var successMessage = $"取込完了しました。追加: {insertCount}件、更新: {updateCount}件";
-                _logger.LogInformation(successMessage);
+                logger.LogInformation(successMessage);
 
                 return Json(new { success = true, message = successMessage, insertCount, updateCount });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "CSV取込エラー");
+                logger.LogError(ex, "CSV取込エラー");
                 return Json(new { success = false, error = $"取込処理中にエラーが発生しました: {ex.Message}" });
             }
         }
@@ -425,9 +411,9 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                _logger.LogInformation("GetLines: search parameter = '{Search}'", search);
+                logger.LogInformation("GetLines: search parameter = '{Search}'", search);
 
-                var lines = await _context.Lines.ToListAsync();
+                var lines = await context.Lines.ToListAsync();
 
                 if (!string.IsNullOrEmpty(search))
                 {
@@ -439,13 +425,13 @@ namespace ActualProductionManager.Controllers
                     .OrderBy(l => l.id)
                     .ToList();
 
-                _logger.LogInformation("GetLines: returning {Count} results", result.Count);
+                logger.LogInformation("GetLines: returning {Count} results", result.Count);
 
                 return Json(new { results = result });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ラインデータ取得エラー");
+                logger.LogError(ex, "ラインデータ取得エラー");
                 return Json(new { results = new List<object>(), error = ex.Message });
             }
         }
@@ -460,7 +446,7 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var line = await _context.Lines.FirstOrDefaultAsync(l => l.Code == code);
+                var line = await context.Lines.FirstOrDefaultAsync(l => l.Code == code);
                 if (line == null)
                 {
                     return Json(new { name = string.Empty });
@@ -470,7 +456,7 @@ namespace ActualProductionManager.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ライン名取得エラー: {Code}", code);
+                logger.LogError(ex, "ライン名取得エラー: {Code}", code);
                 return Json(new { name = string.Empty, error = ex.Message });
             }
         }
@@ -486,9 +472,9 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                _logger.LogInformation("GetItems: search parameter = '{Search}'", search);
+                logger.LogInformation("GetItems: search parameter = '{Search}'", search);
 
-                var items = await _context.Items.ToListAsync();
+                var items = await context.Items.ToListAsync();
 
                 if (!string.IsNullOrEmpty(search))
                 {
@@ -500,13 +486,13 @@ namespace ActualProductionManager.Controllers
                     .OrderBy(i => i.id)
                     .ToList();
 
-                _logger.LogInformation("GetItems: returning {Count} results", result.Count);
+                logger.LogInformation("GetItems: returning {Count} results", result.Count);
 
                 return Json(new { results = result });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "品目データ取得エラー");
+                logger.LogError(ex, "品目データ取得エラー");
                 return Json(new { results = new List<object>(), error = ex.Message });
             }
         }
@@ -521,7 +507,7 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var item = await _context.Items.FirstOrDefaultAsync(i => i.Code == code);
+                var item = await context.Items.FirstOrDefaultAsync(i => i.Code == code);
                 if (item == null)
                 {
                     return Json(new { name = string.Empty });
@@ -531,7 +517,7 @@ namespace ActualProductionManager.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "品目名取得エラー: {Code}", code);
+                logger.LogError(ex, "品目名取得エラー: {Code}", code);
                 return Json(new { name = string.Empty, error = ex.Message });
             }
         }

@@ -7,22 +7,11 @@ namespace ActualProductionManager.Data;
 /// 実績生産管理システムのデータベースコンテキストクラス。
 /// PostgreSQLデータベースとの接続を管理し、各テーブルエンティティへのアクセスを提供します。
 /// </summary>
-public partial class ActualProductionContext : DbContext
+/// <param name="options">DbContext オプション。</param>
+/// <param name="configuration">アプリケーション設定インターフェース。</param>
+public partial class ActualProductionContext(DbContextOptions<ActualProductionContext> options, IConfiguration configuration) : DbContext(options)
 {
-    private readonly IConfiguration _configuration;
-
-    private string Schema => _configuration["Database:Schema"] ?? "dev";
-
-    /// <summary>
-    /// ActualProductionContextのコンストラクタ。
-    /// </summary>
-    /// <param name="options">DbContext オプション。</param>
-    /// <param name="configuration">アプリケーション設定インターフェース。</param>
-    public ActualProductionContext(DbContextOptions<ActualProductionContext> options, IConfiguration configuration)
-        : base(options)
-    {
-        _configuration = configuration;
-    }
+    private string Schema => configuration["Database:Schema"] ?? "dev";
 
     public virtual DbSet<Item> Items { get; set; }
     public virtual DbSet<Line> Lines { get; set; }

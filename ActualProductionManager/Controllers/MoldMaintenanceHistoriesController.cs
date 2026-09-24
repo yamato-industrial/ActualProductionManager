@@ -2,23 +2,17 @@
 using ActualProductionManager.Models.Databases;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Metadata.Ecma335;
 
 namespace ActualProductionManager.Controllers
 {
-    public class MoldMaintenanceHistoriesController : Controller
+    /// <summary>
+    /// 金型修理履歴管理機能を提供するコントローラーです。
+    /// 金型修理履歴の一覧表示、検索、登録、編集、および削除処理を管理します。
+    /// </summary>
+    /// <param name="context">データベースコンテキスト。</param>
+    /// <param name="logger">ロギングサービス。</param>
+    public class MoldMaintenanceHistoriesController(ActualProductionContext context, ILogger<MoldMaintenanceHistoriesController> logger) : Controller
     {
-        private readonly ActualProductionContext _context;
-        private readonly ILogger<MoldMaintenanceHistoriesController> _logger;
-
-        public MoldMaintenanceHistoriesController(
-            ActualProductionContext context,
-            ILogger<MoldMaintenanceHistoriesController> logger)
-        {
-            _context = context;
-            _logger = logger;
-        }
-
         /// <summary>
         /// 金型修理履歴データを検索・ページネーション表示します。
         /// </summary>
@@ -42,8 +36,8 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var query = _context.MoldMaintenanceHistories.Join(
-                    _context.Molds,
+                var query = context.MoldMaintenanceHistories.Join(
+                    context.Molds,
                     history => history.MoldCode,
                     mold => mold.Code,
                     (history, mold) => new MoldMaintenanceHistoryViewModel
@@ -108,7 +102,7 @@ namespace ActualProductionManager.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "修理履歴取得エラー");
+                logger.LogError(ex, "修理履歴取得エラー");
                 TempData["ErrorMessage"] = $"データ取得エラー: {ex.Message}";
                 return View(new List<MoldMaintenanceHistoryViewModel>());
             }
@@ -124,22 +118,22 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var history = await _context.MoldMaintenanceHistories.FirstOrDefaultAsync(x => x.Id == id);
+                var history = await context.MoldMaintenanceHistories.FirstOrDefaultAsync(x => x.Id == id);
                 if (history == null)
                 {
                     TempData["ErrorMessage"] = "削除対象が見つかりません";
                     return RedirectToAction(nameof(Index));
                 }
 
-                _context.MoldMaintenanceHistories.Remove(history);
-                await _context.SaveChangesAsync();
+                context.MoldMaintenanceHistories.Remove(history);
+                await context.SaveChangesAsync();
 
-                _logger.LogInformation("修理履歴を削除しました: {Id}", id);
+                logger.LogInformation("修理履歴を削除しました: {Id}", id);
                 TempData["SuccessMessage"] = "削除しました。";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "修理履歴削除エラー");
+                logger.LogError(ex, "修理履歴削除エラー");
                 TempData["ErrorMessage"] = $"削除エラー: {ex.Message}";
             }
 
@@ -153,7 +147,7 @@ namespace ActualProductionManager.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            return View(new MoldRegistrationViewModel());
+            return View(new MoldMaintenanceHistoryViewModel());
         }
 
         /// <summary>
@@ -166,34 +160,33 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var exists = await _context.Molds.AnyAsync(x => x.Code == model.MoldCode);
+                var exists = await context.Molds.AnyAsync(x => x.Code == model.MoldCode);
                 if (!exists)
                 {
                     TempData["ErrorMessage"] = "金型コードが存在しません";
                     return RedirectToAction(nameof(Create));
                 }
 
-                var maintenanceDateUtc = DateTime.SpecifyKind(model.MaintenanceDate, DateTimeKind.Local).ToUniversalTime();
                 var history = new MoldMaintenanceHistory
                 {
                     MoldCode = model.MoldCode,
-                    MaintenanceDate = maintenanceDateUtc,
+                    MaintenanceDate = DateTime.SpecifyKind(model.MaintenanceDate, DateTimeKind.Local).ToUniversalTime(),
                     MaintenanceShots = model.MaintenanceShots,
                     Remarks = model.Remarks,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
 
-                _context.MoldMaintenanceHistories.Add(history);
-                await _context.SaveChangesAsync();
+                context.MoldMaintenanceHistories.Add(history);
+                await context.SaveChangesAsync();
 
-                _logger.LogInformation("修理履歴を登録しました: {MoldCode}, {MaintenanceDate}", model.MoldCode, model.MaintenanceDate);
+                logger.LogInformation("修理履歴を登録しました: {MoldCode}, {MaintenanceDate}", model.MoldCode, model.MaintenanceDate);
                 TempData["SuccessMessage"] = "登録しました。";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "修理履歴登録エラー");
+                logger.LogError(ex, "修理履歴登録エラー");
                 TempData["ErrorMessage"] = $"登録エラー: {ex.Message}";
                 return RedirectToAction(nameof(Create));
             }
@@ -208,14 +201,14 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var history = await _context.MoldMaintenanceHistories.FirstOrDefaultAsync(x => x.Id == id);
+                var history = await context.MoldMaintenanceHistories.FirstOrDefaultAsync(x => x.Id == id);
                 if (history == null)
                 {
                     TempData["ErrorMessage"] = "対象の修理履歴が見つかりません";
                     return RedirectToAction(nameof(Index));
                 }
 
-                var mold = await _context.Molds.FirstOrDefaultAsync(x => x.Code == history.MoldCode);
+                var mold = await context.Molds.FirstOrDefaultAsync(x => x.Code == history.MoldCode);
                 var model =
                     new MoldMaintenanceHistoryRegistrationViewModel
                     {
@@ -231,7 +224,7 @@ namespace ActualProductionManager.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "修理履歴編集画面表示エラー: {id}", id);
+                logger.LogError(ex, "修理履歴編集画面表示エラー: {id}", id);
                 TempData["ErrorMessage"] = $"データ取得エラー: {ex.Message}";
                 return RedirectToAction(nameof(Index));
             }
@@ -250,23 +243,29 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var history = await _context.MoldMaintenanceHistories.FirstOrDefaultAsync(x => x.Id == model.Id);
+                var history = await context.MoldMaintenanceHistories.FirstOrDefaultAsync(x => x.Id == model.Id);
+                if (history == null)
+                {
+                    TempData["ErrorMessage"] = "更新対象が見つかりません";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 history.MaintenanceDate = DateTime.SpecifyKind(model.MaintenanceDate, DateTimeKind.Local).ToUniversalTime();
                 history.MaintenanceShots = model.MaintenanceShots;
                 history.Remarks = model.Remarks;
                 history.UpdatedAt = DateTime.UtcNow;
 
-                _context.MoldMaintenanceHistories.Update(history);
+                context.MoldMaintenanceHistories.Update(history);
 
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("修理履歴を更新しました: {Id}", model.Id);
+                await context.SaveChangesAsync();
+                logger.LogInformation("修理履歴を更新しました: {Id}", model.Id);
                 TempData["SuccessMessage"] = "更新しました。";
 
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "修理履歴更新エラー: {Id}", model.Id);
+                logger.LogError(ex, "修理履歴更新エラー: {Id}", model.Id);
                 TempData["ErrorMessage"] = $"更新エラー: {ex.Message}";
                 return RedirectToAction(nameof(Edit));
             }
@@ -283,18 +282,13 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var molds = await _context.Molds.ToListAsync();
+                var molds = await context.Molds.ToListAsync();
                 if (!string.IsNullOrEmpty(search))
                 {
-                    molds = molds
+                    molds = [.. molds
                         .Where(x =>
-                            x.Code.Contains(
-                                search,
-                                StringComparison.OrdinalIgnoreCase) ||
-                            x.Name.Contains(
-                                search,
-                                StringComparison.OrdinalIgnoreCase))
-                        .ToList();
+                            x.Code.Contains(search,StringComparison.OrdinalIgnoreCase) ||
+                            x.Name.Contains(search,StringComparison.OrdinalIgnoreCase))];
                 }
 
                 var result = molds
@@ -310,7 +304,7 @@ namespace ActualProductionManager.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "金型検索エラー");
+                logger.LogError(ex, "金型検索エラー");
                 return Json(new { results = new List<object>() });
             }
         }
@@ -325,21 +319,12 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var mold = await _context.Molds
-                    .FirstOrDefaultAsync(
-                        x => x.Code == code);
-
-                return Json(new
-                {
-                    name = mold?.Name ?? string.Empty
-                });
+                var mold = await context.Molds.FirstOrDefaultAsync(x => x.Code == code);
+                return Json(new { name = mold?.Name ?? string.Empty });
             }
             catch
             {
-                return Json(new
-                {
-                    name = string.Empty
-                });
+                return Json(new { name = string.Empty });
             }
         }
     }

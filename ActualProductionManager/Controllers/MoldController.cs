@@ -10,24 +10,10 @@ namespace ActualProductionManager.Controllers
     /// 金型マスタの管理機能を提供するコントローラー。
     /// 金型の一覧表示、登録、更新、削除、および CSV インポート機能を実装します。
     /// </summary>
-    public class MoldsController : Controller
+    /// <param name="context">データベースコンテキスト。</param>
+    /// <param name="logger">ロギングサービス。</param>
+    public class MoldsController(ActualProductionContext context, ILogger<MoldsController> logger) : Controller
     {
-        private readonly ActualProductionContext _context;
-        private readonly ILogger<MoldsController> _logger;
-
-        /// <summary>
-        /// MoldsController のコンストラクタ。
-        /// </summary>
-        /// <param name="context">データベースコンテキスト。</param>
-        /// <param name="logger">ロギングサービス。</param>
-        public MoldsController(
-            ActualProductionContext context,
-            ILogger<MoldsController> logger)
-        {
-            _context = context;
-            _logger = logger;
-        }
-
         /// <summary>
         /// 金型データを検索・ソート・ページネーション表示します。
         /// </summary>
@@ -51,7 +37,7 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var query = _context.Molds.AsQueryable();
+                var query = context.Molds.AsQueryable();
 
                 if (!string.IsNullOrEmpty(searchCode))
                 {
@@ -111,7 +97,7 @@ namespace ActualProductionManager.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "金型データ取得エラー");
+                logger.LogError(ex, "金型データ取得エラー");
                 TempData["ErrorMessage"] = $"データ取得エラー: {ex.Message}";
                 return View(new List<MoldViewModel>());
             }
@@ -141,8 +127,6 @@ namespace ActualProductionManager.Controllers
             {
                 code = code?.Trim() ?? string.Empty;
                 name = name?.Trim() ?? string.Empty;
-                storageLocation = NormalizeOptional(storageLocation);
-                remarks = NormalizeOptional(remarks);
 
                 var validationError = GetValidationError(
                     code,
@@ -156,10 +140,10 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                var mold = await _context.Molds.FirstOrDefaultAsync(m => m.Code == code);
+                var mold = await context.Molds.FirstOrDefaultAsync(m => m.Code == code);
                 if (mold == null)
                 {
-                    _logger.LogWarning("更新対象の金型が見つかりません: {Code}", code);
+                    logger.LogWarning("更新対象の金型が見つかりません: {Code}", code);
                     TempData["ErrorMessage"] = "更新対象のデータが見つかりません。";
 
                     return RedirectToAction(nameof(Index));
@@ -172,15 +156,15 @@ namespace ActualProductionManager.Controllers
                 mold.Remarks = remarks;
                 mold.UpdatedAt = DateTime.UtcNow;
 
-                _context.Molds.Update(mold);
-                await _context.SaveChangesAsync();
+                context.Molds.Update(mold);
+                await context.SaveChangesAsync();
 
-                _logger.LogInformation("金型を更新しました: {Code}", code);
+                logger.LogInformation("金型を更新しました: {Code}", code);
                 TempData["SuccessMessage"] = "更新しました。";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "金型更新エラー: {Code}", code);
+                logger.LogError(ex, "金型更新エラー: {Code}", code);
                 TempData["ErrorMessage"] = $"更新エラー: {ex.Message}";
             }
 
@@ -203,29 +187,29 @@ namespace ActualProductionManager.Controllers
             {
                 code = code?.Trim() ?? string.Empty;
 
-                var mold = await _context.Molds.FirstOrDefaultAsync(m => m.Code == code);
+                var mold = await context.Molds.FirstOrDefaultAsync(m => m.Code == code);
                 if (mold == null)
                 {
-                    _logger.LogWarning("削除対象の金型が見つかりません: {Code}", code);
+                    logger.LogWarning("削除対象の金型が見つかりません: {Code}", code);
                     TempData["ErrorMessage"] = "削除対象のデータが見つかりません。";
 
                     return RedirectToAction(nameof(Index));
                 }
 
-                _context.Molds.Remove(mold);
-                await _context.SaveChangesAsync();
+                context.Molds.Remove(mold);
+                await context.SaveChangesAsync();
 
-                _logger.LogInformation("金型を削除しました: {Code}", code);
+                logger.LogInformation("金型を削除しました: {Code}", code);
                 TempData["SuccessMessage"] = "削除しました。";
             }
             catch (DbUpdateException ex)
             {
-                _logger.LogWarning(ex, "参照データが存在するため金型を削除できません: {Code}", code);
+                logger.LogWarning(ex, "参照データが存在するため金型を削除できません: {Code}", code);
                 TempData["ErrorMessage"] = "ショット実績または修理履歴から参照されているため、この金型は削除できません。";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "金型削除エラー: {Code}", code);
+                logger.LogError(ex, "金型削除エラー: {Code}", code);
                 TempData["ErrorMessage"] = $"削除エラー: {ex.Message}";
             }
 
@@ -252,20 +236,13 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                NormalizeRegistrationModel(model);
-
-                ValidateMold(
-                    model.MoldCode,
-                    model.MoldName,
-                    model.WarningShots,
-                    model.ReplacementShots);
-
-                if (!ModelState.IsValid)
+                if (!(model.ReplacementShots >= model.WarningShots))
                 {
+                    ModelState.AddModelError(nameof(MoldRegistrationViewModel.WarningShots), "交換ショット数は注意ショット数以上を指定してください。");
                     return View("Create", model);
                 }
 
-                var exists = await _context.Molds.AnyAsync(m => m.Code == model.MoldCode);
+                var exists = await context.Molds.AnyAsync(m => m.Code == model.MoldCode);
                 if (exists)
                 {
                     ModelState.AddModelError(nameof(model.MoldCode), "この金型コードは既に登録されています。");
@@ -284,16 +261,16 @@ namespace ActualProductionManager.Controllers
                     UpdatedAt = DateTime.UtcNow
                 };
 
-                _context.Molds.Add(mold);
-                await _context.SaveChangesAsync();
+                context.Molds.Add(mold);
+                await context.SaveChangesAsync();
 
-                _logger.LogInformation("金型を登録しました: {Code}", model.MoldCode);
+                logger.LogInformation("金型を登録しました: {Code}", model.MoldCode);
                 TempData["SuccessMessage"] = "登録しました。";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "金型登録エラー: {Code}", model.MoldCode);
+                logger.LogError(ex, "金型登録エラー: {Code}", model.MoldCode);
                 TempData["ErrorMessage"] = $"登録エラー: {ex.Message}";
                 return View("Create", model);
             }
@@ -320,7 +297,7 @@ namespace ActualProductionManager.Controllers
         /// </param>
         /// <returns>インポート結果をJSON形式で返します。</returns>
         [HttpPost]
-        public async Task<IActionResult> ImportFile(IFormFile csvFile, string importMode = "upsert")
+        public async Task<IActionResult> ImportFile(IFormFile csvFile)
         {
             try
             {
@@ -360,8 +337,8 @@ namespace ActualProductionManager.Controllers
 
                     var code = columns[0].Trim();
                     var name = columns[1].Trim();
-                    var storageLocation = NormalizeOptional(columns[2]);
-                    var remarks = NormalizeOptional(columns[5]);
+                    var storageLocation = columns[2];
+                    var remarks = columns[5];
 
                     if (string.IsNullOrWhiteSpace(code))
                     {
@@ -387,9 +364,9 @@ namespace ActualProductionManager.Controllers
                         continue;
                     }
 
-                    if (warningShots >= replacementShots)
+                    if (!(replacementShots >= warningShots))
                     {
-                        errors.Add($"{lineNumber}行目: 注意ショット数は交換ショット数より小さい値を指定してください");
+                        errors.Add($"{lineNumber}行目: 交換ショット数は注意ショット数以上を指定してください");
                         continue;
                     }
 
@@ -430,7 +407,7 @@ namespace ActualProductionManager.Controllers
                 }
 
                 var importedCodes = importedRecords.Select(record => record.Code).ToList();
-                var existingMolds = await _context.Molds
+                var existingMolds = await context.Molds
                     .Where(mold => importedCodes.Contains(mold.Code))
                     .ToDictionaryAsync(mold => mold.Code);
                 var now = DateTime.UtcNow;
@@ -464,92 +441,22 @@ namespace ActualProductionManager.Controllers
                             UpdatedAt = now
                         };
 
-                        _context.Molds.Add(mold);
+                        context.Molds.Add(mold);
                         insertCount++;
                     }
                 }
 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
 
                 var successMessage = $"取込完了しました。追加: {insertCount}件、更新: {updateCount}件";
-                _logger.LogInformation("金型CSV取込完了。追加: {InsertCount}件、更新: {UpdateCount}件", insertCount, updateCount);
+                logger.LogInformation("金型CSV取込完了。追加: {InsertCount}件、更新: {UpdateCount}件", insertCount, updateCount);
 
                 return Json(new { success = true, message = successMessage, insertCount, updateCount });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "金型CSV取込エラー");
+                logger.LogError(ex, "金型CSV取込エラー");
                 return Json(new { success = false, error = $"取込処理中にエラーが発生しました: {ex.Message}" });
-            }
-        }
-
-        /// <summary>
-        /// 登録モデルの文字列を正規化します。
-        /// </summary>
-        private static void NormalizeRegistrationModel(
-            MoldRegistrationViewModel model)
-        {
-            model.MoldCode = model.MoldCode?.Trim() ?? string.Empty;
-            model.MoldName = model.MoldName?.Trim() ?? string.Empty;
-            model.StorageLocation =
-                NormalizeOptional(model.StorageLocation);
-            model.Remarks = NormalizeOptional(model.Remarks);
-        }
-
-        /// <summary>
-        /// 空白文字列をnullへ変換します。
-        /// </summary>
-        private static string? NormalizeOptional(string? value)
-        {
-            return string.IsNullOrWhiteSpace(value)
-                ? null
-                : value.Trim();
-        }
-
-        /// <summary>
-        /// 金型情報を検証し、エラーをModelStateへ追加します。
-        /// </summary>
-        private void ValidateMold(
-            string code,
-            string name,
-            long warningShots,
-            long replacementShots)
-        {
-            if (string.IsNullOrWhiteSpace(code))
-            {
-                ModelState.AddModelError(
-                    nameof(MoldRegistrationViewModel.MoldCode),
-                    "金型コードは必須です。");
-            }
-
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                ModelState.AddModelError(
-                    nameof(MoldRegistrationViewModel.MoldName),
-                    "金型名称は必須です。");
-            }
-
-            if (warningShots < 0)
-            {
-                ModelState.AddModelError(
-                    nameof(MoldRegistrationViewModel.WarningShots),
-                    "注意ショット数は0以上で指定してください。");
-            }
-
-            if (replacementShots <= 0)
-            {
-                ModelState.AddModelError(
-                    nameof(MoldRegistrationViewModel.ReplacementShots),
-                    "交換ショット数は0より大きい値を指定してください。");
-            }
-
-            if (warningShots >= replacementShots &&
-                replacementShots > 0)
-            {
-                ModelState.AddModelError(
-                    nameof(MoldRegistrationViewModel.WarningShots),
-                    "注意ショット数は交換ショット数より" +
-                    "小さい値を指定してください。");
             }
         }
 
@@ -641,8 +548,7 @@ namespace ActualProductionManager.Controllers
         /// <summary>
         /// CSV検証エラーのJSONレスポンスを作成します。
         /// </summary>
-        private JsonResult CreateCsvErrorResponse(
-            IReadOnlyCollection<string> errors)
+        private JsonResult CreateCsvErrorResponse(List<string> errors)
         {
             var displayErrors = errors.Take(10).ToList();
 
@@ -666,28 +572,6 @@ namespace ActualProductionManager.Controllers
                 error = "CSVファイルにエラーがあります",
                 details = errorHtml
             });
-        }
-
-        /// <summary>
-        /// 一覧取得失敗時のViewData初期値を設定します。
-        /// </summary>
-        private void SetDefaultViewData(
-            string? searchCode,
-            string? searchName,
-            string? searchStorageLocation,
-            string sortBy,
-            string sortOrder,
-            int pageSize)
-        {
-            ViewData["SearchCode"] = searchCode;
-            ViewData["SearchName"] = searchName;
-            ViewData["SearchStorageLocation"] = searchStorageLocation;
-            ViewData["SortBy"] = sortBy;
-            ViewData["SortOrder"] = sortOrder;
-            ViewData["PageSize"] = pageSize;
-            ViewData["Page"] = 1;
-            ViewData["TotalCount"] = 0;
-            ViewData["TotalPages"] = 1;
         }
 
         /// <summary>

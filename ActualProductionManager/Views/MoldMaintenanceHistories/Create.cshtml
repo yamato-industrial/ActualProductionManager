@@ -45,7 +45,6 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
-
             // 金型コード Select2初期化
             $('#moldCode').select2({
                 theme: 'bootstrap-5',
@@ -91,36 +90,6 @@
                 } else {
                     $('#moldName').val('');
                 }
-            });
-
-            // フォーム送信時の検証
-            $('#registrationForm').on('submit', function (e) {
-                var moldCode = $('#moldCode').val();
-                var maintenanceDate = $('#maintenanceDate').val();
-                var maintenanceShotsText = $('#maintenanceShots').val();
-
-                if (!moldCode || !maintenanceDate) {
-                    e.preventDefault();
-                    alert('必須項目をすべて入力してください');
-                    return false;
-                }
-
-                if (maintenanceShotsText) {
-                    var maintenanceShots = Number(maintenanceShotsText);
-
-                    if (!Number.isInteger(maintenanceShots) ||
-                        maintenanceShots < 0) {
-                        e.preventDefault();
-                        alert('修理時ショット数には0以上の整数を入力してください');
-                        return false;
-                    }
-                }
-
-                $('#submitButton')
-                    .prop('disabled', true)
-                    .text('登録中...');
-
-                return true;
             });
         });
     </script>

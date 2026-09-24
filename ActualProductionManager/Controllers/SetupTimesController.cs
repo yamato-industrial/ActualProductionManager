@@ -9,24 +9,10 @@ namespace ActualProductionManager.Controllers
     /// 段取り時間（セットアップタイム）の管理機能を提供するコントローラー。
     /// 段取り時間の一覧表示、登録、更新、削除、および CSV インポート機能を実装します。
     /// </summary>
-    public class SetupTimesController : Controller
+    /// <param name="context">データベースコンテキスト。</param>
+    /// <param name="logger">ロギングサービス。</param>
+    public class SetupTimesController(ActualProductionContext context, ILogger<SetupTimesController> logger) : Controller
     {
-        private readonly ActualProductionContext _context;
-        private readonly ILogger<SetupTimesController> _logger;
-
-        /// <summary>
-        /// SetupTimesController のコンストラクタ。
-        /// </summary>
-        /// <param name="context">データベースコンテキスト。</param>
-        /// <param name="logger">ロギングサービス。</param>
-        public SetupTimesController(
-            ActualProductionContext context,
-            ILogger<SetupTimesController> logger)
-        {
-            _context = context;
-            _logger = logger;
-        }
-
         /// <summary>
         /// 段取り時間データを検索・ソート・ページネーション表示します。
         /// </summary>
@@ -48,7 +34,7 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var query = _context.SetupTimes.AsQueryable();
+                var query = context.SetupTimes.AsQueryable();
 
                 if (!string.IsNullOrEmpty(searchLineCode))
                 {
@@ -82,8 +68,8 @@ namespace ActualProductionManager.Controllers
                 var lineCodes = setupTimes.Select(x => x.LineCode).Distinct().ToList();
                 var itemCodes = setupTimes.Select(x => x.ItemCode).Distinct().ToList();
 
-                var lineNames = await _context.Lines.Where(line => lineCodes.Contains(line.Code)).ToDictionaryAsync(line => line.Code, line => line.Name);
-                var itemNames = await _context.Items.Where(item => itemCodes.Contains(item.Code)).ToDictionaryAsync(item => item.Code, item => item.Name);
+                var lineNames = await context.Lines.Where(line => lineCodes.Contains(line.Code)).ToDictionaryAsync(line => line.Code, line => line.Name);
+                var itemNames = await context.Items.Where(item => itemCodes.Contains(item.Code)).ToDictionaryAsync(item => item.Code, item => item.Name);
 
                 var viewModels = setupTimes.Select(s => new SetupTimeViewModel
                 {
@@ -108,7 +94,7 @@ namespace ActualProductionManager.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "段取り時間データ取得エラー");
+                logger.LogError(ex, "段取り時間データ取得エラー");
                 TempData["ErrorMessage"] = $"データ取得エラー: {ex.Message}";
                 return View(new List<SetupTimeViewModel>());
             }
@@ -129,12 +115,12 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var setupTime = await _context.SetupTimes
+                var setupTime = await context.SetupTimes
                     .FirstOrDefaultAsync(s => s.LineCode == lineCode && s.ItemCode == itemCode);
 
                 if (setupTime == null)
                 {
-                    _logger.LogWarning("更新対象の段取り時間が見つかりません: {LineCode}-{ItemCode}", lineCode, itemCode);
+                    logger.LogWarning("更新対象の段取り時間が見つかりません: {LineCode}-{ItemCode}", lineCode, itemCode);
                     TempData["ErrorMessage"] = "更新対象のデータが見つかりません";
                     return RedirectToAction(nameof(Index));
                 }
@@ -142,15 +128,15 @@ namespace ActualProductionManager.Controllers
                 setupTime.TargetSetupTime = targetSetupTimeMinutes * 60;
                 setupTime.UpdatedAt = DateTime.UtcNow;
 
-                _context.SetupTimes.Update(setupTime);
-                await _context.SaveChangesAsync();
+                context.SetupTimes.Update(setupTime);
+                await context.SaveChangesAsync();
 
-                _logger.LogInformation("段取り時間を更新しました: {LineCode}-{ItemCode} ({Minutes}分)", lineCode, itemCode, targetSetupTimeMinutes);
+                logger.LogInformation("段取り時間を更新しました: {LineCode}-{ItemCode} ({Minutes}分)", lineCode, itemCode, targetSetupTimeMinutes);
                 TempData["SuccessMessage"] = "更新しました。";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "段取り時間更新エラー: {LineCode}-{ItemCode}", lineCode, itemCode);
+                logger.LogError(ex, "段取り時間更新エラー: {LineCode}-{ItemCode}", lineCode, itemCode);
                 TempData["ErrorMessage"] = $"更新エラー: {ex.Message}";
             }
 
@@ -168,25 +154,25 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var setupTime = await _context.SetupTimes
+                var setupTime = await context.SetupTimes
                     .FirstOrDefaultAsync(s => s.LineCode == lineCode && s.ItemCode == itemCode);
 
                 if (setupTime == null)
                 {
-                    _logger.LogWarning("削除対象の段取り時間が見つかりません: {LineCode}-{ItemCode}", lineCode, itemCode);
+                    logger.LogWarning("削除対象の段取り時間が見つかりません: {LineCode}-{ItemCode}", lineCode, itemCode);
                     TempData["ErrorMessage"] = "削除対象のデータが見つかりません";
                     return RedirectToAction(nameof(Index));
                 }
 
-                _context.SetupTimes.Remove(setupTime);
-                await _context.SaveChangesAsync();
+                context.SetupTimes.Remove(setupTime);
+                await context.SaveChangesAsync();
 
-                _logger.LogInformation("段取り時間を削除しました: {LineCode}-{ItemCode}", lineCode, itemCode);
+                logger.LogInformation("段取り時間を削除しました: {LineCode}-{ItemCode}", lineCode, itemCode);
                 TempData["SuccessMessage"] = "削除しました。";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "段取り時間削除エラー: {LineCode}-{ItemCode}", lineCode, itemCode);
+                logger.LogError(ex, "段取り時間削除エラー: {LineCode}-{ItemCode}", lineCode, itemCode);
                 TempData["ErrorMessage"] = $"削除エラー: {ex.Message}";
             }
 
@@ -224,7 +210,7 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Create));
                 }
 
-                var existingSetupTime = await _context.SetupTimes
+                var existingSetupTime = await context.SetupTimes
                     .FirstOrDefaultAsync(s => s.LineCode == lineCode && s.ItemCode == itemCode);
 
                 if (existingSetupTime != null)
@@ -242,16 +228,16 @@ namespace ActualProductionManager.Controllers
                     UpdatedAt = DateTime.UtcNow
                 };
 
-                _context.SetupTimes.Add(setupTime);
-                await _context.SaveChangesAsync();
+                context.SetupTimes.Add(setupTime);
+                await context.SaveChangesAsync();
 
-                _logger.LogInformation("段取り時間を登録しました: {LineCode}-{ItemCode} ({Minutes}分)", lineCode, itemCode, targetSetupTimeMinutes);
+                logger.LogInformation("段取り時間を登録しました: {LineCode}-{ItemCode} ({Minutes}分)", lineCode, itemCode, targetSetupTimeMinutes);
                 TempData["SuccessMessage"] = "登録しました。";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "段取り時間登録エラー");
+                logger.LogError(ex, "段取り時間登録エラー");
                 TempData["ErrorMessage"] = $"登録エラー: {ex.Message}";
                 return RedirectToAction(nameof(Create));
             }
@@ -321,8 +307,8 @@ namespace ActualProductionManager.Controllers
                         }
 
                         // ラインコードと品目コードが存在するか確認
-                        var lineExists = await _context.Lines.AnyAsync(l => l.Code == lineCode);
-                        var itemExists = await _context.Items.AnyAsync(i => i.Code == itemCode);
+                        var lineExists = await context.Lines.AnyAsync(l => l.Code == lineCode);
+                        var itemExists = await context.Items.AnyAsync(i => i.Code == itemCode);
 
                         if (!lineExists)
                         {
@@ -360,9 +346,9 @@ namespace ActualProductionManager.Controllers
 
                 if (importMode == "replace")
                 {
-                    var existingSetupTimes = await _context.SetupTimes.ToListAsync();
-                    _context.SetupTimes.RemoveRange(existingSetupTimes);
-                    await _context.SaveChangesAsync();
+                    var existingSetupTimes = await context.SetupTimes.ToListAsync();
+                    context.SetupTimes.RemoveRange(existingSetupTimes);
+                    await context.SaveChangesAsync();
                 }
 
                 int insertCount = 0;
@@ -370,14 +356,14 @@ namespace ActualProductionManager.Controllers
 
                 foreach (var (lineCode, itemCode, minutes) in importedRecords)
                 {
-                    var existing = await _context.SetupTimes
+                    var existing = await context.SetupTimes
                         .FirstOrDefaultAsync(s => s.LineCode == lineCode && s.ItemCode == itemCode);
 
                     if (existing != null)
                     {
                         existing.TargetSetupTime = minutes * 60;
                         existing.UpdatedAt = DateTime.UtcNow;
-                        _context.SetupTimes.Update(existing);
+                        context.SetupTimes.Update(existing);
                         updateCount++;
                     }
                     else
@@ -390,21 +376,21 @@ namespace ActualProductionManager.Controllers
                             CreatedAt = DateTime.UtcNow,
                             UpdatedAt = DateTime.UtcNow
                         };
-                        _context.SetupTimes.Add(newSetupTime);
+                        context.SetupTimes.Add(newSetupTime);
                         insertCount++;
                     }
                 }
 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
 
                 var successMessage = $"取込完了しました。追加: {insertCount}件、更新: {updateCount}件";
-                _logger.LogInformation(successMessage);
+                logger.LogInformation(successMessage);
 
                 return Json(new { success = true, message = successMessage, insertCount, updateCount });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "CSV取込エラー");
+                logger.LogError(ex, "CSV取込エラー");
                 return Json(new { success = false, error = $"取込処理中にエラーが発生しました: {ex.Message}" });
             }
         }
@@ -420,9 +406,9 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                _logger.LogInformation("GetLines: search parameter = '{Search}'", search);
+                logger.LogInformation("GetLines: search parameter = '{Search}'", search);
 
-                var lines = await _context.Lines.ToListAsync();
+                var lines = await context.Lines.ToListAsync();
 
                 if (!string.IsNullOrEmpty(search))
                 {
@@ -434,13 +420,13 @@ namespace ActualProductionManager.Controllers
                     .OrderBy(l => l.id)
                     .ToList();
 
-                _logger.LogInformation("GetLines: returning {Count} results", result.Count);
+                logger.LogInformation("GetLines: returning {Count} results", result.Count);
 
                 return Json(new { results = result });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ラインデータ取得エラー");
+                logger.LogError(ex, "ラインデータ取得エラー");
                 return Json(new { results = new List<object>(), error = ex.Message });
             }
         }
@@ -455,7 +441,7 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var line = await _context.Lines.FirstOrDefaultAsync(l => l.Code == code);
+                var line = await context.Lines.FirstOrDefaultAsync(l => l.Code == code);
                 if (line == null)
                 {
                     return Json(new { name = string.Empty });
@@ -465,7 +451,7 @@ namespace ActualProductionManager.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ライン名取得エラー: {Code}", code);
+                logger.LogError(ex, "ライン名取得エラー: {Code}", code);
                 return Json(new { name = string.Empty, error = ex.Message });
             }
         }
@@ -481,9 +467,9 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                _logger.LogInformation("GetItems: search parameter = '{Search}'", search);
+                logger.LogInformation("GetItems: search parameter = '{Search}'", search);
 
-                var items = await _context.Items.ToListAsync();
+                var items = await context.Items.ToListAsync();
 
                 if (!string.IsNullOrEmpty(search))
                 {
@@ -495,13 +481,13 @@ namespace ActualProductionManager.Controllers
                     .OrderBy(i => i.id)
                     .ToList();
 
-                _logger.LogInformation("GetItems: returning {Count} results", result.Count);
+                logger.LogInformation("GetItems: returning {Count} results", result.Count);
 
                 return Json(new { results = result });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "品目データ取得エラー");
+                logger.LogError(ex, "品目データ取得エラー");
                 return Json(new { results = new List<object>(), error = ex.Message });
             }
         }
@@ -516,7 +502,7 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var item = await _context.Items.FirstOrDefaultAsync(i => i.Code == code);
+                var item = await context.Items.FirstOrDefaultAsync(i => i.Code == code);
                 if (item == null)
                 {
                     return Json(new { name = string.Empty });
@@ -526,7 +512,7 @@ namespace ActualProductionManager.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "品目名取得エラー: {Code}", code);
+                logger.LogError(ex, "品目名取得エラー: {Code}", code);
                 return Json(new { name = string.Empty, error = ex.Message });
             }
         }

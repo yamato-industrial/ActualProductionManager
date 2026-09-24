@@ -104,10 +104,10 @@
                                     <td>@setupTime.ItemCode</td>
                                     <td>@setupTime.ItemName</td>
                                     <td>
-                                        <form method="post" action="@Url.Action("Update")" style="display:inline;">
+                                        <form method="post" action="@Url.Action("Update")">
                                             <input type="hidden" name="lineCode" value="@setupTime.LineCode" />
                                             <input type="hidden" name="itemCode" value="@setupTime.ItemCode" />
-                                            <div class="input-group input-group-sm" style="width: 120px;">
+                                            <div class="input-group input-group-sm">
                                                 <input type="number" class="form-control" name="targetSetupTimeMinutes" value="@setupTime.TargetSetupTimeMinutes" min="1" />
                                                 <span class="input-group-append">
                                                     <button type="submit" class="btn btn-info btn-flat">
@@ -154,7 +154,9 @@
                         <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
                             <a class="page-link" href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy, sortOrder, pageSize, page = currentPage - 1 })">‘O‚Ö</a>
                         </li>
-                        <li class="page-item disabled"><span class="page-link">@currentPage / @totalPages</span></li>
+                        <li class="page-item disabled">
+                            <span class="page-link">@currentPage / @totalPages</span>
+                        </li>
                         <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
                             <a class="page-link" href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy, sortOrder, pageSize, page = currentPage + 1 })">ŽŸ‚Ö</a>
                         </li>

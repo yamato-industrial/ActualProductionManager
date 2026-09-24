@@ -12,7 +12,7 @@
                 <div class="card-body">
                     <div class="form-group">
                         <label for="lineCode">ラインコード <span class="text-danger">*</span></label>
-                        <select id="lineCode" name="lineCode" class="form-control" style="width: 100%;" required>
+                        <select id="lineCode" name="lineCode" class="form-control" required>
                             <option value="">選択してください</option>
                         </select>
                     </div>
@@ -22,7 +22,7 @@
                     </div>
                     <div class="form-group">
                         <label for="itemCode">品目コード <span class="text-danger">*</span></label>
-                        <select id="itemCode" name="itemCode" class="form-control" style="width: 100%;" required>
+                        <select id="itemCode" name="itemCode" class="form-control" required>
                             <option value="">選択してください</option>
                         </select>
                     </div>
@@ -32,11 +32,11 @@
                     </div>
                     <div class="form-group">
                         <label for="targetCycleTime">目標サイクルタイム(秒) <span class="text-danger">*</span></label>
-                        <input type="number" id="targetCycleTime" name="targetCycleTime" class="form-control" min="0" required>
+                        <input type="number" id="targetCycleTime" name="targetCycleTime" class="form-control" min="1">
                     </div>
                     <div class="form-group">
                         <label for="piecesPerCycle">サイクルあたりの個数 <span class="text-danger">*</span></label>
-                        <input type="number" id="piecesPerCycle" name="piecesPerCycle" class="form-control" min="1" required>
+                        <input type="number" id="piecesPerCycle" name="piecesPerCycle" class="form-control" min="1">
                     </div>
                 </div>
                 <div class="card-footer">
@@ -138,15 +138,5 @@
                     $('#itemName').val('');
                 }
             });
-
-            // フォーム送信時の検証
-            $('#registrationForm').on('submit', function (e) {
-                if (!$('#lineCode').val() || !$('#itemCode').val() || !$('#targetCycleTime').val() || !$('#piecesPerCycle').val()) {
-                    e.preventDefault();
-                    alert('必須項目をすべて入力してください');
-                    return false;
-                }
-            });
-        });
     </script>
 }

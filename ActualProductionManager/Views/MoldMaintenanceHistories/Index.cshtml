@@ -148,9 +148,15 @@
                     </form>
                     <div class="text-muted text-sm">@totalCount 件中@(((currentPage - 1) * pageSize) + (Model.Any() ? 1 : 0)) - @(Math.Min(currentPage * pageSize, totalCount)) 件を表示</div>
                     <ul class="pagination pagination-sm m-0">
-                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchMoldCode, searchMoldName, fromDate, toDate, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a></li>
-                        <li class="page-item disabled"><span class="page-link">@currentPage / @totalPages</span></li>
-                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchMoldCode, searchMoldName, fromDate, toDate, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a></li>
+                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { searchMoldCode, searchMoldName, fromDate, toDate, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">@currentPage / @totalPages</span>
+                        </li>
+                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { searchMoldCode, searchMoldName, fromDate, toDate, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a>
+                        </li>
                     </ul>
                 </div>
             </div>

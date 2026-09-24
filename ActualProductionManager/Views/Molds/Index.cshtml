@@ -93,13 +93,13 @@
                                     <td>@mold.MoldName</td>
                                     <td>@mold.StorageLocation</td>
                                     <td>
-                                        <form method="post" action=@Url.Action("Update") style="display:inline;">
+                                        <form method="post" action=@Url.Action("Update")>
                                             <input type="hidden" name="code" value="@mold.MoldCode" />
                                             <input type="hidden" name="name" value="@mold.MoldName" />
                                             <input type="hidden" name="storageLocation" value="@mold.StorageLocation" />
                                             <input type="hidden" name="replacementShots" value="@mold.ReplacementShots" />
                                             <input type="hidden" name="remarks" value="@mold.Remarks" />
-                                            <div class="input-group input-group-sm" style="width: 120px;">
+                                            <div class="input-group input-group-sm">
                                                 <input type="number" class="form-control" name="warningShots" value="@mold.WarningShots" min="0" />
                                                 <span class="input-group-append">
                                                     <button type="submit" class="btn btn-info btn-flat">
@@ -110,13 +110,13 @@
                                         </form>
                                     </td>
                                     <td>
-                                        <form method="post" action=@Url.Action("Update") style="display:inline;">
+                                        <form method="post" action=@Url.Action("Update")>
                                             <input type="hidden" name="code" value="@mold.MoldCode" />
                                             <input type="hidden" name="name" value="@mold.MoldName" />
                                             <input type="hidden" name="storageLocation" value="@mold.StorageLocation" />
                                             <input type="hidden" name="warningShots" value="@mold.WarningShots" />
                                             <input type="hidden" name="remarks" value="@mold.Remarks" />
-                                            <div class="input-group input-group-sm" style="width: 120px;">
+                                            <div class="input-group input-group-sm">
                                                 <input type="number" class="form-control" name="replacementShots" value="@mold.ReplacementShots" min="0" />
                                                 <span class="input-group-append">
                                                     <button type="submit" class="btn btn-info btn-flat">
@@ -161,9 +161,15 @@
                     </form>
                     <div class="text-muted text-sm">@totalCount 件中@(((currentPage - 1) * pageSize) + (Model.Any() ? 1 : 0)) - @(Math.Min(currentPage * pageSize, totalCount)) 件を表示</div>
                     <ul class="pagination pagination-sm m-0">
-                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchCode, searchName, SearchStorageLocation, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a></li>
-                        <li class="page-item disabled"><span class="page-link">@currentPage / @totalPages</span></li>
-                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchCode, searchName, SearchStorageLocation, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a></li>
+                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { searchCode, searchName, SearchStorageLocation, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">@currentPage / @totalPages</span>
+                        </li>
+                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { searchCode, searchName, SearchStorageLocation, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a>
+                        </li>
                     </ul>
                 </div>
             </div>

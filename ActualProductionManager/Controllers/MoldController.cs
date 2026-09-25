@@ -17,8 +17,8 @@ namespace ActualProductionManager.Controllers
         /// <summary>
         /// 金型データを検索・ソート・ページネーション表示します。
         /// </summary>
-        /// <param name="searchCode">検索用金型コード。</param>
-        /// <param name="searchName">検索用金型名称。</param>
+        /// <param name="searchMoldCode">検索用金型コード。</param>
+        /// <param name="searchMoldName">検索用金型名称。</param>
         /// <param name="searchStorageLocation">検索用置場。</param>
         /// <param name="sortBy">ソート対象フィールド。</param>
         /// <param name="sortOrder">ソート順序。asc または desc。</param>
@@ -27,8 +27,8 @@ namespace ActualProductionManager.Controllers
         /// <returns>金型一覧ビュー。</returns>
         [HttpGet]
         public async Task<IActionResult> Index(
-            string? searchCode,
-            string? searchName,
+            string? searchMoldCode,
+            string? searchMoldName,
             string? searchStorageLocation,
             string sortBy = "storageLocation",
             string sortOrder = "asc",
@@ -39,14 +39,14 @@ namespace ActualProductionManager.Controllers
             {
                 var query = context.Molds.AsQueryable();
 
-                if (!string.IsNullOrEmpty(searchCode))
+                if (!string.IsNullOrEmpty(searchMoldCode))
                 {
-                    query = query.Where(m => EF.Functions.ILike(m.Code, $"%{searchCode}%"));
+                    query = query.Where(m => EF.Functions.ILike(m.Code, $"%{searchMoldCode}%"));
                 }
 
-                if (!string.IsNullOrEmpty(searchName))
+                if (!string.IsNullOrEmpty(searchMoldName))
                 {
-                    query = query.Where(m => EF.Functions.ILike(m.Name, $"%{searchName}%"));
+                    query = query.Where(m => EF.Functions.ILike(m.Name, $"%{searchMoldName}%"));
                 }
 
                 if (!string.IsNullOrEmpty(searchStorageLocation))
@@ -83,8 +83,8 @@ namespace ActualProductionManager.Controllers
                     Remarks = c.Remarks
                 }).ToList();
 
-                ViewData["SearchCode"] = searchCode;
-                ViewData["SearchName"] = searchName;
+                ViewData["SearchCode"] = searchMoldCode;
+                ViewData["SearchName"] = searchMoldName;
                 ViewData["SearchStorageLocation"] = searchStorageLocation;
                 ViewData["SortBy"] = sortBy;
                 ViewData["SortOrder"] = sortOrder;
@@ -107,17 +107,18 @@ namespace ActualProductionManager.Controllers
         /// 指定された金型を更新します。
         /// 金型コードは実物に印字されたNanoIDのため変更しません。
         /// </summary>
-        /// <param name="code">金型コード。</param>
-        /// <param name="name">金型名称。</param>
+        /// <param name="moldCode">金型コード。</param>
+        /// <param name="moldName">金型名称。</param>
         /// <param name="storageLocation">置場。</param>
         /// <param name="warningShots">注意ショット数。</param>
         /// <param name="replacementShots">交換ショット数。</param>
         /// <param name="remarks">備考。</param>
         /// <returns>金型一覧画面へのリダイレクト。</returns>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Update(
-            string code,
-            string name,
+            string moldCode,
+            string moldName,
             string? storageLocation,
             long warningShots,
             long replacementShots,
@@ -125,12 +126,12 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                code = code?.Trim() ?? string.Empty;
-                name = name?.Trim() ?? string.Empty;
+                moldCode = moldCode?.Trim() ?? string.Empty;
+                moldName = moldName?.Trim() ?? string.Empty;
 
                 var validationError = GetValidationError(
-                    code,
-                    name,
+                    moldCode,
+                    moldName,
                     warningShots,
                     replacementShots);
 
@@ -140,16 +141,16 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                var mold = await context.Molds.FirstOrDefaultAsync(m => m.Code == code);
+                var mold = await context.Molds.FirstOrDefaultAsync(m => m.Code == moldCode);
                 if (mold == null)
                 {
-                    logger.LogWarning("更新対象の金型が見つかりません: {Code}", code);
+                    logger.LogWarning("更新対象の金型が見つかりません: {Code}", moldCode);
                     TempData["ErrorMessage"] = "更新対象のデータが見つかりません。";
 
                     return RedirectToAction(nameof(Index));
                 }
 
-                mold.Name = name;
+                mold.Name = moldName;
                 mold.StorageLocation = storageLocation;
                 mold.WarningShots = warningShots;
                 mold.ReplacementShots = replacementShots;
@@ -159,12 +160,12 @@ namespace ActualProductionManager.Controllers
                 context.Molds.Update(mold);
                 await context.SaveChangesAsync();
 
-                logger.LogInformation("金型を更新しました: {Code}", code);
+                logger.LogInformation("金型を更新しました: {Code}", moldCode);
                 TempData["SuccessMessage"] = "更新しました。";
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "金型更新エラー: {Code}", code);
+                logger.LogError(ex, "金型更新エラー: {Code}", moldCode);
                 TempData["ErrorMessage"] = $"更新エラー: {ex.Message}";
             }
 
@@ -178,19 +179,20 @@ namespace ActualProductionManager.Controllers
         /// 金型ショット実績または金型修理履歴から参照されている場合、
         /// データベースの外部キー制約により削除できません。
         /// </remarks>
-        /// <param name="code">金型コード。</param>
+        /// <param name="moldCode">金型コード。</param>
         /// <returns>金型一覧画面へのリダイレクト。</returns>
-        [HttpGet]
-        public async Task<IActionResult> Delete(string code)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(string moldCode)
         {
             try
             {
-                code = code?.Trim() ?? string.Empty;
+                moldCode = moldCode?.Trim() ?? string.Empty;
 
-                var mold = await context.Molds.FirstOrDefaultAsync(m => m.Code == code);
+                var mold = await context.Molds.FirstOrDefaultAsync(m => m.Code == moldCode);
                 if (mold == null)
                 {
-                    logger.LogWarning("削除対象の金型が見つかりません: {Code}", code);
+                    logger.LogWarning("削除対象の金型が見つかりません: {Code}", moldCode);
                     TempData["ErrorMessage"] = "削除対象のデータが見つかりません。";
 
                     return RedirectToAction(nameof(Index));
@@ -199,17 +201,17 @@ namespace ActualProductionManager.Controllers
                 context.Molds.Remove(mold);
                 await context.SaveChangesAsync();
 
-                logger.LogInformation("金型を削除しました: {Code}", code);
+                logger.LogInformation("金型を削除しました: {Code}", moldCode);
                 TempData["SuccessMessage"] = "削除しました。";
             }
             catch (DbUpdateException ex)
             {
-                logger.LogWarning(ex, "参照データが存在するため金型を削除できません: {Code}", code);
+                logger.LogWarning(ex, "参照データが存在するため金型を削除できません: {Code}", moldCode);
                 TempData["ErrorMessage"] = "ショット実績または修理履歴から参照されているため、この金型は削除できません。";
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "金型削除エラー: {Code}", code);
+                logger.LogError(ex, "金型削除エラー: {Code}", moldCode);
                 TempData["ErrorMessage"] = $"削除エラー: {ex.Message}";
             }
 
@@ -232,6 +234,7 @@ namespace ActualProductionManager.Controllers
         /// <param name="model">金型登録要のビュー・モデル。</param>
         /// <returns>登録成功時は一覧ページへ、失敗時は登録画面へリダイレクト。</returns>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Store(MoldRegistrationViewModel model)
         {
             try

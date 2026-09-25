@@ -108,6 +108,7 @@ namespace ActualProductionManager.Controllers
         /// <param name="targetSetupTimeMinutes">目標段取り時間（分単位）。</param>
         /// <returns>一覧ページへのリダイレクト。</returns>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Update(
             string lineCode,
             string itemCode,
@@ -149,7 +150,8 @@ namespace ActualProductionManager.Controllers
         /// <param name="lineCode">ラインコード。</param>
         /// <param name="itemCode">品目コード。</param>
         /// <returns>一覧ページへのリダイレクト。</returns>
-        [HttpGet]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(string lineCode, string itemCode)
         {
             try
@@ -197,6 +199,7 @@ namespace ActualProductionManager.Controllers
         /// <param name="targetSetupTimeMinutes">目標段取り時間（分単位）。</param>
         /// <returns>登録成功時は一覧ページへ、失敗時は登録画面へリダイレクト。</returns>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Store(
             string lineCode,
             string itemCode,

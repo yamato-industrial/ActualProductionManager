@@ -9,6 +9,7 @@
                 <h3 class="card-title">金型新規登録</h3>
             </div>
             <form id="registrationForm" method="post" action="@Url.Action("Store", "Molds")">
+                @Html.AntiForgeryToken()
                 <div class="card-body">
                     <div class="form-group">
                         <label for="code">金型コード<span class="text-danger">*</span></label>

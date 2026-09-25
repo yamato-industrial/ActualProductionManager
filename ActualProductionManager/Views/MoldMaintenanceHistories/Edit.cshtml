@@ -9,6 +9,7 @@
                 <h3 class="card-title">金型修理履歴編集</h3>
             </div>
             <form id="registrationForm" method="post" action="@Url.Action("Update", "MoldMaintenanceHistories")">
+                @Html.AntiForgeryToken()
                 <div class="card-body">
                     <input type="hidden" id="id" name="id" class="form-control" value="@Model.Id" readonly />
                     <div class="form-group">

@@ -118,9 +118,14 @@
                                         </form>
                                     </td>
                                     <td>
-                                        <a href="@Url.Action("Delete", new { lineCode = setupTime.LineCode, itemCode = setupTime.ItemCode })" class="btn btn-danger btn-sm" onclick="return confirm('çÌèúÇµÇƒÇ‡ÇÊÇÎÇµÇ¢Ç≈Ç∑Ç©ÅH')">
-                                            <i class="fas fa-trash"></i> çÌèú
-                                        </a>
+                                        <form method="post" action="@Url.Action("Delete")">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="lineCode" value="@setupTime.LineCode" />
+                                            <input type="hidden" name="itemCode" value="@setupTime.ItemCode" />
+                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('çÌèúÇµÇƒÇÊÇÎÇµÇ¢Ç≈Ç∑Ç©ÅH')">
+                                                <i class="fas fa-trash"></i> çÌèú
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             }

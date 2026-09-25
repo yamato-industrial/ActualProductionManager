@@ -9,6 +9,7 @@
                 <h3 class="card-title">段取り時間新規登録</h3>
             </div>
             <form id="registrationForm" method="post" action="@Url.Action("Store", "SetupTimes")">
+                @Html.AntiForgeryToken()
                 <div class="card-body">
                     <div class="form-group">
                         <label for="lineCode">ラインコード <span class="text-danger">*</span></label>

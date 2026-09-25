@@ -94,8 +94,9 @@
                                     <td>@mold.StorageLocation</td>
                                     <td>
                                         <form method="post" action=@Url.Action("Update")>
-                                            <input type="hidden" name="code" value="@mold.MoldCode" />
-                                            <input type="hidden" name="name" value="@mold.MoldName" />
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="moldCode" value="@mold.MoldCode" />
+                                            <input type="hidden" name="moldName" value="@mold.MoldName" />
                                             <input type="hidden" name="storageLocation" value="@mold.StorageLocation" />
                                             <input type="hidden" name="replacementShots" value="@mold.ReplacementShots" />
                                             <input type="hidden" name="remarks" value="@mold.Remarks" />
@@ -111,8 +112,9 @@
                                     </td>
                                     <td>
                                         <form method="post" action=@Url.Action("Update")>
-                                            <input type="hidden" name="code" value="@mold.MoldCode" />
-                                            <input type="hidden" name="name" value="@mold.MoldName" />
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="moldCode" value="@mold.MoldCode" />
+                                            <input type="hidden" name="moldName" value="@mold.MoldName" />
                                             <input type="hidden" name="storageLocation" value="@mold.StorageLocation" />
                                             <input type="hidden" name="warningShots" value="@mold.WarningShots" />
                                             <input type="hidden" name="remarks" value="@mold.Remarks" />
@@ -128,9 +130,13 @@
                                     </td>
                                     <td>@mold.Remarks</td>
                                     <td>
-                                        <a href="@Url.Action("Delete", new { code = mold.MoldCode })" class="btn btn-danger btn-sm" onclick="return confirm('削除してよろしいですか？')">
-                                            <i class="fas fa-trash"></i> 削除
-                                        </a>
+                                        <form method="post" action="@Url.Action("Delete")">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="moldCode" value="@mold.MoldCode" />
+                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('削除してよろしいですか？')">
+                                                <i class="fas fa-trash"></i> 削除
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             }

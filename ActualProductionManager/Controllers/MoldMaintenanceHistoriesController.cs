@@ -113,7 +113,8 @@ namespace ActualProductionManager.Controllers
         /// </summary>
         /// <param name="id">金型修理履歴ID。</param>
         /// <returns>一覧画面へのリダイレクト。</returns>
-        [HttpGet]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(long id)
         {
             try
@@ -156,6 +157,7 @@ namespace ActualProductionManager.Controllers
         /// <param name="model">金型修理履歴登録用のビュー・モデル。</param>
         /// <returns>登録成功時は一覧画面へ、失敗時は登録画面へリダイレクト。</returns>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Store(MoldMaintenanceHistoryRegistrationViewModel model)
         {
             try
@@ -239,6 +241,7 @@ namespace ActualProductionManager.Controllers
         /// <param name="remarks">備考。</param>
         /// <returns>一覧画面へのリダイレクト。</returns>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Update(MoldMaintenanceHistoryRegistrationViewModel model)
         {
             try

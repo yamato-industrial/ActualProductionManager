@@ -106,6 +106,7 @@
                                     <td>@condition.ItemName</td>
                                     <td>
                                         <form method="post" action="@Url.Action("Update")">
+                                            @Html.AntiForgeryToken()
                                             <input type="hidden" name="lineCode" value="@condition.LineCode" />
                                             <input type="hidden" name="itemCode" value="@condition.ItemCode" />
                                             <input type="hidden" name="piecesPerCycle" value="@condition.PiecesPerCycle" />
@@ -121,6 +122,7 @@
                                     </td>
                                     <td>
                                         <form method="post" action="@Url.Action("Update")">
+                                            @Html.AntiForgeryToken()
                                             <input type="hidden" name="lineCode" value="@condition.LineCode" />
                                             <input type="hidden" name="itemCode" value="@condition.ItemCode" />
                                             <input type="hidden" name="TargetCycleTime" value="@condition.TargetCycleTime" />
@@ -135,9 +137,14 @@
                                         </form>
                                     </td>
                                     <td>
-                                        <a href="@Url.Action("Delete", new { lineCode = condition.LineCode, itemCode = condition.ItemCode })" class="btn btn-danger btn-sm" onclick="return confirm('çÌèúÇµÇƒÇÊÇÎÇµÇ¢Ç≈Ç∑Ç©ÅH')">
-                                            <i class="fas fa-trash"></i> çÌèú
-                                        </a>
+                                        <form method="post" action="@Url.Action("Delete")">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="lineCode" value="@condition.LineCode" />
+                                            <input type="hidden" name="itemCode" value="@condition.ItemCode" />
+                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('çÌèúÇµÇƒÇÊÇÎÇµÇ¢Ç≈Ç∑Ç©ÅH')">
+                                                <i class="fas fa-trash"></i> çÌèú
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             }

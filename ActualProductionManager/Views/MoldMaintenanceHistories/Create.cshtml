@@ -9,6 +9,7 @@
                 <h3 class="card-title">金型修理履歴新規登録</h3>
             </div>
             <form id="registrationForm" method="post" action="@Url.Action("Store", "MoldMaintenanceHistories")">
+                @Html.AntiForgeryToken()
                 <div class="card-body">
                     <div class="form-group">
                         <label for="moldCode">金型コード <span class="text-danger">*</span></label>

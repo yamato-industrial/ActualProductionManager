@@ -27,8 +27,8 @@ namespace ActualProductionManager.Controllers
         public async Task<IActionResult> Index(
             string? searchMoldCode,
             string? searchMoldName,
-            DateTime? fromDate,
-            DateTime? toDate,
+            DateOnly? fromDate,
+            DateOnly? toDate,
             string sortBy = "maintenanceDate",
             string sortOrder = "desc",
             int pageSize = 10,
@@ -60,26 +60,20 @@ namespace ActualProductionManager.Controllers
                     query = query.Where(x => EF.Functions.ILike(x.MoldName, $"%{searchMoldName}%"));
                 }
 
-                var japanTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Tokyo Standard Time");
-
                 if (fromDate.HasValue)
                 {
-                    var fromLocal = DateTime.SpecifyKind(fromDate.Value.Date, DateTimeKind.Unspecified);
-                    var fromUtc = TimeZoneInfo.ConvertTimeToUtc(fromLocal, japanTimeZone);
-                    query = query.Where(x => x.MaintenanceDate >= fromUtc);
+                    query = query.Where(x => x.MaintenanceDate >= fromDate);
                 }
 
                 if (toDate.HasValue)
                 {
-                    var nextDateLocal = DateTime.SpecifyKind(toDate.Value.Date.AddDays(1), DateTimeKind.Unspecified);
-                    var nextDateUtc = TimeZoneInfo.ConvertTimeToUtc(nextDateLocal, japanTimeZone);
-                    query = query.Where(x => x.MaintenanceDate < nextDateUtc);
+                    query = query.Where(x => x.MaintenanceDate <= toDate);
                 }
 
                 query = sortBy switch
                 {
                     "moldName" => sortOrder == "asc" ? query.OrderBy(x => x.MoldName) : query.OrderByDescending(x => x.MoldName),
-                    _ => sortOrder == "asc" ? query.OrderByDescending(x => x.MaintenanceDate) : query.OrderBy(x => x.MaintenanceDate)
+                    _ => sortOrder == "asc" ? query.OrderBy(x => x.MaintenanceDate) : query.OrderByDescending(x => x.MaintenanceDate)
                 };
 
                 var totalCount = await query.CountAsync();
@@ -148,7 +142,7 @@ namespace ActualProductionManager.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            return View(new MoldMaintenanceHistoryViewModel());
+            return View(new MoldMaintenanceHistoryRegistrationViewModel());
         }
 
         /// <summary>
@@ -172,7 +166,7 @@ namespace ActualProductionManager.Controllers
                 var history = new MoldMaintenanceHistory
                 {
                     MoldCode = model.MoldCode,
-                    MaintenanceDate = DateTime.SpecifyKind(model.MaintenanceDate, DateTimeKind.Local).ToUniversalTime(),
+                    MaintenanceDate = model.MaintenanceDate,
                     MaintenanceShots = model.MaintenanceShots,
                     Remarks = model.Remarks,
                     CreatedAt = DateTime.UtcNow,
@@ -236,7 +230,7 @@ namespace ActualProductionManager.Controllers
         /// 指定された金型修理履歴を更新します。
         /// </summary>
         /// <param name="id">金型修理履歴ID。</param>
-        /// <param name="maintenanceDate">修理実施日時。</param>
+        /// <param name="maintenanceDate">修理実施日。</param>
         /// <param name="maintenanceShots">修理実施時ショット数。</param>
         /// <param name="remarks">備考。</param>
         /// <returns>一覧画面へのリダイレクト。</returns>
@@ -253,7 +247,7 @@ namespace ActualProductionManager.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                history.MaintenanceDate = DateTime.SpecifyKind(model.MaintenanceDate, DateTimeKind.Local).ToUniversalTime();
+                history.MaintenanceDate = model.MaintenanceDate;
                 history.MaintenanceShots = model.MaintenanceShots;
                 history.Remarks = model.Remarks;
                 history.UpdatedAt = DateTime.UtcNow;
@@ -270,7 +264,7 @@ namespace ActualProductionManager.Controllers
             {
                 logger.LogError(ex, "修理履歴更新エラー: {Id}", model.Id);
                 TempData["ErrorMessage"] = $"更新エラー: {ex.Message}";
-                return RedirectToAction(nameof(Edit));
+                return RedirectToAction(nameof(Edit), new { id = model.Id });
             }
         }
 
@@ -341,7 +335,7 @@ namespace ActualProductionManager.Controllers
         public long Id { get; set; }
         public string MoldCode { get; set; } = string.Empty;
         public string MoldName { get; set; } = string.Empty;
-        public DateTime MaintenanceDate { get; set; }
+        public DateOnly MaintenanceDate { get; set; }
         public long? MaintenanceShots { get; set; }
         public string? Remarks { get; set; }
     }
@@ -355,7 +349,7 @@ namespace ActualProductionManager.Controllers
         public long? Id { get; set; }
         public string MoldCode { get; set; } = string.Empty;
         public string MoldName { get; set; } = string.Empty;
-        public DateTime MaintenanceDate { get; set; } = DateTime.Now;
+        public DateOnly MaintenanceDate { get; set; }
         public long? MaintenanceShots { get; set; }
         public string? Remarks { get; set; }
     }

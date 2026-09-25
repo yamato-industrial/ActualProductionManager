@@ -77,7 +77,7 @@
                                 </th>
                                 <th>
                                     <a href="@Url.Action("Index", new { searchMoldCode, searchMoldName, fromDate, toDate, sortBy = "maintenanceDate", sortOrder = (sortBy == "maintenanceDate" && sortOrder == "asc") ? "desc" : "asc" })">
-                                        修理日時
+                                        修理日
                                         @if (sortBy == "maintenanceDate")
                                         {
                                             <i class="fas fa-sort-@(sortOrder == "asc" ? "up" : "down")"></i>
@@ -97,7 +97,7 @@
                                     <tr>
                                         <td>@history.MoldCode</td>
                                         <td>@history.MoldName</td>
-                                        <td>@history.MaintenanceDate.ToString("yyyy/MM/dd HH:mm")</td>
+                                        <td>@history.MaintenanceDate.ToString("yyyy/MM/dd")</td>
                                         <td class="text-right">
                                             @if (history.MaintenanceShots.HasValue)
                                             {
@@ -127,7 +127,7 @@
                             else
                             {
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted">表示対象のデータがありません</td>
+                                    <td colspan="6" class="text-center text-muted">表示対象のデータがありません</td>
                                 </tr>
                             }
                         </tbody>

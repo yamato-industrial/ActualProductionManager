@@ -8,7 +8,7 @@ public partial class MoldMaintenanceHistory
 {
     public long Id { get; set; }
     public string MoldCode { get; set; } = null!;
-    public DateTime MaintenanceDate { get; set; }
+    public DateOnly MaintenanceDate { get; set; }
     public long? MaintenanceShots { get; set; }
     public string? Remarks { get; set; }
     public DateTime CreatedAt { get; set; }

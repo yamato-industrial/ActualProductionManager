@@ -97,8 +97,7 @@ namespace ActualProductionManager.Controllers
             catch (Exception ex)
             {
                 logger.LogError(ex, "修理履歴取得エラー");
-                TempData["ErrorMessage"] = $"データ取得エラー: {ex.Message}";
-                return View(new List<MoldMaintenanceHistoryViewModel>());
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -106,33 +105,36 @@ namespace ActualProductionManager.Controllers
         /// 指定された金型修理履歴を削除します。
         /// </summary>
         /// <param name="id">金型修理履歴ID。</param>
-        /// <returns>一覧画面へのリダイレクト。</returns>
+        /// <returns>Json結果。</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(long id)
         {
             try
             {
-                var history = await context.MoldMaintenanceHistories.FirstOrDefaultAsync(x => x.Id == id);
-                if (history == null)
-                {
-                    TempData["ErrorMessage"] = "削除対象が見つかりません";
-                    return RedirectToAction(nameof(Index));
-                }
-
+                var history = await context.MoldMaintenanceHistories.FirstAsync(x => x.Id == id);
                 context.MoldMaintenanceHistories.Remove(history);
                 await context.SaveChangesAsync();
 
                 logger.LogInformation("修理履歴を削除しました: {Id}", id);
-                TempData["SuccessMessage"] = "削除しました。";
+
+                return Json(new
+                {
+                    success = true,
+                    message = "削除しました。"
+                });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "修理履歴削除エラー");
-                TempData["ErrorMessage"] = $"削除エラー: {ex.Message}";
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "削除処理中にエラーが発生しました。"
+                    });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
@@ -148,21 +150,14 @@ namespace ActualProductionManager.Controllers
         /// <summary>
         /// 新しい金型修理履歴をデータベースへ登録します。
         /// </summary>
-        /// <param name="model">金型修理履歴登録用のビュー・モデル。</param>
-        /// <returns>登録成功時は一覧画面へ、失敗時は登録画面へリダイレクト。</returns>
+        /// <param name="model">金型修理履歴登録用のビューモデル。</param>
+        /// <returns>登録結果をJSON形式で返します。</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Store(MoldMaintenanceHistoryRegistrationViewModel model)
         {
             try
             {
-                var exists = await context.Molds.AnyAsync(x => x.Code == model.MoldCode);
-                if (!exists)
-                {
-                    TempData["ErrorMessage"] = "金型コードが存在しません";
-                    return RedirectToAction(nameof(Create));
-                }
-
                 var history = new MoldMaintenanceHistory
                 {
                     MoldCode = model.MoldCode,
@@ -176,15 +171,27 @@ namespace ActualProductionManager.Controllers
                 context.MoldMaintenanceHistories.Add(history);
                 await context.SaveChangesAsync();
 
-                logger.LogInformation("修理履歴を登録しました: {MoldCode}, {MaintenanceDate}", model.MoldCode, model.MaintenanceDate);
-                TempData["SuccessMessage"] = "登録しました。";
-                return RedirectToAction(nameof(Index));
+                logger.LogInformation("修理履歴を登録しました: {Id}, {MoldCode}, {MaintenanceDate}", history.Id, model.MoldCode, model.MaintenanceDate);
+
+                return Json(new
+                {
+                    success = true,
+                    message = "登録しました。",
+                    id = history.Id,
+                    redirectUrl = Url.Action(nameof(Index))
+                });
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "修理履歴登録エラー");
-                TempData["ErrorMessage"] = $"登録エラー: {ex.Message}";
-                return RedirectToAction(nameof(Create));
+                logger.LogError(ex, "修理履歴登録エラー: {MoldCode}", model.MoldCode);
+
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "登録処理中にエラーが発生しました。"
+                    });
             }
         }
 
@@ -197,74 +204,65 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var history = await context.MoldMaintenanceHistories.FirstOrDefaultAsync(x => x.Id == id);
-                if (history == null)
-                {
-                    TempData["ErrorMessage"] = "対象の修理履歴が見つかりません";
-                    return RedirectToAction(nameof(Index));
-                }
-
+                var history = await context.MoldMaintenanceHistories.FirstAsync(x => x.Id == id);
                 var mold = await context.Molds.FirstOrDefaultAsync(x => x.Code == history.MoldCode);
-                var model =
-                    new MoldMaintenanceHistoryRegistrationViewModel
-                    {
-                        Id = history.Id,
-                        MoldCode = history.MoldCode,
-                        MoldName = mold?.Name ?? string.Empty,
-                        MaintenanceDate = history.MaintenanceDate,
-                        MaintenanceShots = history.MaintenanceShots,
-                        Remarks = history.Remarks
-                    };
+                var model = new MoldMaintenanceHistoryRegistrationViewModel
+                {
+                    Id = history.Id,
+                    MoldCode = history.MoldCode,
+                    MoldName = mold?.Name ?? string.Empty,
+                    MaintenanceDate = history.MaintenanceDate,
+                    MaintenanceShots = history.MaintenanceShots,
+                    Remarks = history.Remarks
+                };
 
                 return View(model);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "修理履歴編集画面表示エラー: {id}", id);
-                TempData["ErrorMessage"] = $"データ取得エラー: {ex.Message}";
-                return RedirectToAction(nameof(Index));
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
 
         /// <summary>
         /// 指定された金型修理履歴を更新します。
         /// </summary>
-        /// <param name="id">金型修理履歴ID。</param>
-        /// <param name="maintenanceDate">修理実施日。</param>
-        /// <param name="maintenanceShots">修理実施時ショット数。</param>
-        /// <param name="remarks">備考。</param>
-        /// <returns>一覧画面へのリダイレクト。</returns>
+        /// <param name="model">/// 金型修理履歴更新用のビューモデル。/// </param>
+        /// <returns>更新結果をJSON形式で返します。</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Update(MoldMaintenanceHistoryRegistrationViewModel model)
         {
             try
             {
-                var history = await context.MoldMaintenanceHistories.FirstOrDefaultAsync(x => x.Id == model.Id);
-                if (history == null)
-                {
-                    TempData["ErrorMessage"] = "更新対象が見つかりません";
-                    return RedirectToAction(nameof(Index));
-                }
-
+                var history = await context.MoldMaintenanceHistories.FirstAsync(x => x.Id == model.Id);
                 history.MaintenanceDate = model.MaintenanceDate;
                 history.MaintenanceShots = model.MaintenanceShots;
                 history.Remarks = model.Remarks;
                 history.UpdatedAt = DateTime.UtcNow;
 
-                context.MoldMaintenanceHistories.Update(history);
-
                 await context.SaveChangesAsync();
-                logger.LogInformation("修理履歴を更新しました: {Id}", model.Id);
-                TempData["SuccessMessage"] = "更新しました。";
 
-                return RedirectToAction(nameof(Index));
+                logger.LogInformation("修理履歴を更新しました: {Id}", model.Id);
+
+                return Json(new
+                {
+                    success = true,
+                    message = "更新しました。",
+                    redirectUrl = Url.Action(nameof(Index))
+                });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "修理履歴更新エラー: {Id}", model.Id);
-                TempData["ErrorMessage"] = $"更新エラー: {ex.Message}";
-                return RedirectToAction(nameof(Edit), new { id = model.Id });
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "更新処理中にエラーが発生しました。"
+                    });
             }
         }
 

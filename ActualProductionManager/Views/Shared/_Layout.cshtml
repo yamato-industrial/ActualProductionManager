@@ -131,166 +131,211 @@
         </footer>
     </div>
 
-    <!-- 共通モーダルコンテナ -->
-    <div class="modal fade" id="commonModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="commonModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="commonModalLabel">通知</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
-                </div>
-                <div class="modal-body" id="commonModalBody">
-                    <!-- コンテンツがここに挿入される -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
-                    <button type="button" class="btn btn-primary" id="commonModalConfirmBtn" style="display: none;">確認</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- 必須スクリプト -->
     <script src="~/adminlte/plugins/jquery/jquery.min.js"></script>
     <script src="~/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="~/adminlte/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
     <script src="~/adminlte/dist/js/adminlte.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        // 汎用モーダル表示用オブジェクト
-        const AppModal = {
-            // モーダル要素とBootstrapモーダルインスタンス
-            element: null,
-            modal: null,
+        window.AppNotify = {
+            colors: {
+                success: '#28a745',
+                info: '#17a2b8',
+                warning: '#ffc107',
+                error: '#dc3545',
+                question: '#3085d6'
+            },
 
-            // 初期化
-            init: function () {
-                this.element = document.getElementById('commonModal');
-                // Bootstrapのオプションを明示的に設定
-                this.modal = new bootstrap.Modal(this.element, {
-                    backdrop: 'static',  // static で背景クリック無効化
-                    keyboard: true       // Esc キー有効化
+            alert: function (options) {
+                const type = options.type ?? 'info';
+
+                return Swal.fire({
+                    icon: type,
+                    title: options.title ?? 'お知らせ',
+                    text: options.message ?? '',
+                    confirmButtonText: options.confirmButtonText ?? 'はい',
+                    confirmButtonColor: options.confirmButtonColor ?? this.colors[type] ?? this.colors.info,
+                    allowOutsideClick: false
                 });
+            },
 
-                // モーダルが閉じるときのイベントリスナー
-                this.element.addEventListener('hidden.bs.modal', () => {
-                    this.reset();
+            confirm: function (options) {
+                const type = options.type ?? 'warning';
+
+                return Swal.fire({
+                    icon: type,
+                    title: options.title ?? '確認',
+                    text: options.message ?? '',
+                    showCancelButton: true,
+                    confirmButtonText: options.confirmButtonText ?? 'はい',
+                    cancelButtonText: options.cancelButtonText ?? 'いいえ',
+                    confirmButtonColor: options.confirmButtonColor ?? this.colors[type] ?? this.colors.warning,
+                    cancelButtonColor: '#6c757d',
+                    allowOutsideClick: false
                 });
+            },
 
-                // data-bs-dismiss属性を持つボタンに対するイベント委譲
-                this.element.addEventListener('click', (event) => {
-                    if (event.target.hasAttribute('data-bs-dismiss')) {
-                        this.modal.hide();
+            toast: function (options) {
+                const type = options.type ?? 'success';
+
+                return Swal.fire({
+                    toast: true,
+                    position: options.position ?? 'top-end',
+                    icon: type,
+                    title: options.message ?? '',
+                    showConfirmButton: false,
+                    timer: options.timer ?? 3000,
+                    timerProgressBar: true,
+                    background: options.background ?? '#ffffff',
+                    didOpen: function (toast) {
+                        toast.addEventListener('mouseenter', Swal.stopTimer);
+                        toast.addEventListener('mouseleave', Swal.resumeTimer);
                     }
                 });
             },
 
-            // 成功メッセージを表示
-            showSuccess: function (title, message, onConfirm) {
-                this.show('success', title, message, onConfirm);
+            error: function (message) {
+                return this.alert({
+                    type: 'error',
+                    title: 'エラー',
+                    message: message,
+                    confirmButtonText: '閉じる'
+                });
             },
 
-            // エラーメッセージを表示
-            showError: function (title, message, onConfirm) {
-                this.show('error', title, message, onConfirm);
+            warning: function (message) {
+                return this.alert({
+                    type: 'warning',
+                    title: '警告',
+                    message: message,
+                    confirmButtonText: '確認'
+                });
             },
 
-            // 警告メッセージを表示
-            showWarning: function (title, message, onConfirm) {
-                this.show('warning', title, message, onConfirm);
+            success: function (message) {
+                return this.toast({type: 'success', message: message});
             },
 
-            // 情報メッセージを表示
-            showInfo: function (title, message, onConfirm) {
-                this.show('info', title, message, onConfirm);
-            },
-
-            // 確認ダイアログを表示
-            showConfirm: function (title, message, onConfirm, onCancel) {
-                this.show('confirm', title, message, onConfirm);
-                const confirmBtn = document.getElementById('commonModalConfirmBtn');
-                confirmBtn.style.display = 'block';
-                confirmBtn.textContent = '確認';
-                confirmBtn.onclick = () => {
-                    if (onConfirm) onConfirm();
-                    this.hide();
-                };
-            },
-
-            // 内部用：モーダルを表示
-            show: function (type, title, message, onConfirm) {
-                if (!this.modal) {
-                    this.init();
-                }
-
-                const titleElement = document.getElementById('commonModalLabel');
-                const bodyElement = document.getElementById('commonModalBody');
-                const confirmBtn = document.getElementById('commonModalConfirmBtn');
-
-                titleElement.textContent = title;
-                bodyElement.innerHTML = '';
-
-                // アイコンとメッセージをレンダリング
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'd-flex align-items-center';
-
-                const iconSpan = document.createElement('span');
-                iconSpan.className = 'me-3';
-                iconSpan.style.fontSize = '24px';
-
-                switch (type) {
-                    case 'success':
-                        iconSpan.innerHTML = '<i class="fas fa-check-circle text-success"></i>';
-                        break;
-                    case 'error':
-                        iconSpan.innerHTML = '<i class="fas fa-times-circle text-danger"></i>';
-                        break;
-                    case 'warning':
-                        iconSpan.innerHTML = '<i class="fas fa-exclamation-circle text-warning"></i>';
-                        break;
-                    case 'info':
-                        iconSpan.innerHTML = '<i class="fas fa-info-circle text-info"></i>';
-                        break;
-                    case 'confirm':
-                        iconSpan.innerHTML = '<i class="fas fa-question-circle text-primary"></i>';
-                        break;
-                }
-
-                messageDiv.appendChild(iconSpan);
-
-                const textDiv = document.createElement('div');
-                textDiv.innerHTML = message;
-                messageDiv.appendChild(textDiv);
-
-                bodyElement.appendChild(messageDiv);
-
-                if (type !== 'confirm') {
-                    confirmBtn.style.display = 'none';
-                }
-
-                this.modal.show();
-            },
-
-            // モーダルを閉じる
-            hide: function () {
-                if (this.modal) {
-                    this.modal.hide();
-                }
-            },
-
-            // 状態をリセット
-            reset: function () {
-                const confirmBtn = document.getElementById('commonModalConfirmBtn');
-                confirmBtn.style.display = 'none';
-                confirmBtn.onclick = null;
+            info: function (message) {
+                return this.toast({type: 'info', message: message});
             }
         };
+    </script>
 
-        // ページロード時に初期化
-        document.addEventListener('DOMContentLoaded', function () {
-            AppModal.init();
-        });
+    <script>
+        $(document).on(
+            'submit',
+            '.ajax-form',
+            async function (event) {
+                event.preventDefault();
+
+                const form = this;
+                const submitButton =form.querySelector('button[type="submit"]');
+                const confirmTitle = form.dataset.confirmTitle;
+                const confirmMessage = form.dataset.confirmMessage;
+
+                if (confirmMessage) {
+                    const result =
+                        await AppNotify.confirm({
+                            type: form.dataset.confirmType ?? 'warning',
+                            title: confirmTitle ?? '確認',
+                            message: confirmMessage,
+                            confirmButtonText: form.dataset.confirmButtonText ?? 'はい',
+                            cancelButtonText: form.dataset.cancelButtonText ?? 'いいえ'
+                        });
+
+                    if (!result.isConfirmed) {
+                        return;
+                    }
+                }
+
+                if (submitButton) {
+                    submitButton.disabled = true;
+                }
+
+                try {
+                    const response = await fetch(
+                        form.action,
+                        {
+                            method: form.method || 'POST',
+                            body: new FormData(form),
+                            headers: {'X-Requested-With': 'XMLHttpRequest'}
+                        });
+
+                    const contentType = response.headers.get( 'content-type');
+                    if (!contentType || !contentType.includes('application/json'))
+                    {
+                        throw new Error('サーバーから正しい応答を取得できませんでした。');
+                    }
+
+                    const data = await response.json();
+                    if (!response.ok ||
+                        !data.success) {
+                        throw new Error(
+                            data.message ??
+                            '処理に失敗しました。');
+                    }
+
+                    AppNotify.success(
+                        data.message ??
+                        '処理が完了しました。');
+
+                    const removeSelector =
+                        form.dataset.removeTarget;
+
+                    if (removeSelector) {
+                        const target =
+                            form.closest(removeSelector);
+
+                        target?.remove();
+                    }
+
+                    const redirectUrl =
+                        data.redirectUrl ??
+                        form.dataset.redirectUrl;
+
+                    if (redirectUrl) {
+                        setTimeout(function () {
+                            window.location.href =
+                                redirectUrl;
+                        }, 800);
+
+                        return;
+                    }
+
+                    if (form.dataset.reload === 'true') {
+                        setTimeout(function () {
+                            window.location.reload();
+                        }, 800);
+
+                        return;
+                    }
+
+                    if (form.dataset.reset === 'true') {
+                        form.reset();
+
+                        $(form)
+                            .find('select')
+                            .val(null)
+                            .trigger('change');
+                    }
+                }
+                catch (error) {
+                    console.error(error);
+
+                    AppNotify.error(
+                        error.message ??
+                        '予期しないエラーが発生しました。');
+                }
+                finally {
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                    }
+                }
+            });
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)

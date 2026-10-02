@@ -82,8 +82,8 @@ namespace ActualProductionManager.Controllers
                     Remarks = c.Remarks
                 }).ToList();
 
-                ViewData["SearchCode"] = searchMoldCode;
-                ViewData["SearchName"] = searchMoldName;
+                ViewData["SearchMoldCode"] = searchMoldCode;
+                ViewData["SearchMoldName"] = searchMoldName;
                 ViewData["SearchStorageLocation"] = searchStorageLocation;
                 ViewData["SortBy"] = sortBy;
                 ViewData["SortOrder"] = sortOrder;
@@ -106,7 +106,6 @@ namespace ActualProductionManager.Controllers
         /// 金型コードは実物に印字されたNanoIDのため変更しません。
         /// </summary>
         /// <param name="moldCode">金型コード。</param>
-        /// <param name="moldName">金型名称。</param>
         /// <param name="storageLocation">置場。</param>
         /// <param name="warningShots">注意ショット数。</param>
         /// <param name="replacementShots">交換ショット数。</param>
@@ -116,7 +115,6 @@ namespace ActualProductionManager.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Update(
             string moldCode,
-            string moldName,
             string? storageLocation,
             long warningShots,
             long replacementShots,

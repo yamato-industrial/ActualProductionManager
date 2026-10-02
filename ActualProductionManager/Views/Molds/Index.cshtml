@@ -2,9 +2,9 @@
 
 @{
     ViewData["Title"] = "金型";
-    var searchCode = ViewData["SearchCode"]?.ToString();
-    var searchName = ViewData["SearchName"]?.ToString();
-    var SearchStorageLocation = ViewData["SearchStorageLocation"]?.ToString();
+    var searchMoldCode = ViewData["SearchMoldCode"]?.ToString();
+    var searchMoldName = ViewData["SearchMoldName"]?.ToString();
+    var searchStorageLocation = ViewData["SearchStorageLocation"]?.ToString();
     var sortBy = ViewData["SortBy"]?.ToString() ?? "code";
     var sortOrder = ViewData["SortOrder"]?.ToString() ?? "asc";
     var pageSize = (int)(ViewData["PageSize"] ?? 10);
@@ -33,16 +33,16 @@
             <div class="card-body bg-light">
                 <form method="get" class="form-inline" style="gap: 10px;">
                     <div class="form-group">
-                        <label for="searchCode" class="mr-2">金型コード:</label>
-                        <input type="text" id="searchCode" name="searchCode" class="form-control form-control-sm" value="@searchCode" />
+                        <label for="searchMoldCode" class="mr-2">金型コード:</label>
+                        <input type="text" id="searchMoldCode" name="searchMoldCode" class="form-control form-control-sm" value="@searchMoldCode" />
                     </div>
                     <div class="form-group">
-                        <label for="searchName" class="mr-2">金型名称:</label>
-                        <input type="text" id="searchName" name="searchName" class="form-control form-control-sm" value="@searchName" />
+                        <label for="searchMoldName" class="mr-2">金型名称:</label>
+                        <input type="text" id="searchMoldName" name="searchMoldName" class="form-control form-control-sm" value="@searchMoldName" />
                     </div>
                     <div class="form-group">
-                        <label for="searchName" class="mr-2">置場:</label>
-                        <input type="text" id="searchName" name="searchName" class="form-control form-control-sm" value="@searchName" />
+                        <label for="searchStorageLocation" class="mr-2">置場:</label>
+                        <input type="text" id="searchStorageLocation" name="searchStorageLocation" class="form-control form-control-sm" value="@searchStorageLocation" />
                     </div>
                     <button type="submit" class="btn btn-info btn-sm">
                         <i class="fas fa-search"></i>検索
@@ -60,7 +60,7 @@
                         <tr>
                             <th>金型コード</th>
                             <th>
-                                <a href="@Url.Action("Index", new { searchCode, searchName, SearchStorageLocation, sortBy = "moldName", sortOrder = (sortBy == "moldName" && sortOrder == "asc") ? "desc" : "asc" })">
+                                <a href="@Url.Action("Index", new { searchMoldCode, searchMoldName, searchStorageLocation, sortBy = "moldName", sortOrder = (sortBy == "moldName" && sortOrder == "asc") ? "desc" : "asc" })">
                                     金型名称
                                     @if (sortBy == "moldName")
                                     {
@@ -69,7 +69,7 @@
                                 </a>
                             </th>
                             <th>
-                                <a href="@Url.Action("Index", new { searchCode, searchName, SearchStorageLocation, sortBy = "storageLocation", sortOrder = (sortBy == "storageLocation" && sortOrder == "asc") ? "desc" : "asc" })">
+                                <a href="@Url.Action("Index", new { searchMoldCode, searchMoldName, searchStorageLocation, sortBy = "storageLocation", sortOrder = (sortBy == "storageLocation" && sortOrder == "asc") ? "desc" : "asc" })">
                                     置場
                                     @if (sortBy == "storageLocation")
                                     {
@@ -91,12 +91,27 @@
                                 <tr>
                                     <td>@mold.MoldCode</td>
                                     <td>@mold.MoldName</td>
-                                    <td>@mold.StorageLocation</td>
                                     <td>
                                         <form method="post" class="ajax-form rm d-inline" action=@Url.Action("Update")>
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="moldCode" value="@mold.MoldCode" />
-                                            <input type="hidden" name="moldName" value="@mold.MoldName" />
+                                            <input type="hidden" name="warningShots" value="@mold.WarningShots" />
+                                            <input type="hidden" name="replacementShots" value="@mold.ReplacementShots" />
+                                            <input type="hidden" name="remarks" value="@mold.Remarks" />
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" class="form-control" name="storageLocation" value="@mold.StorageLocation" min="0" />
+                                                <span class="input-group-append">
+                                                    <button type="submit" class="btn btn-info btn-flat">
+                                                        <i class="fas fa-save"></i>
+                                                    </button>
+                                                </span>
+                                            </div>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form method="post" class="ajax-form rm d-inline" action=@Url.Action("Update")>
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="moldCode" value="@mold.MoldCode" />
                                             <input type="hidden" name="storageLocation" value="@mold.StorageLocation" />
                                             <input type="hidden" name="replacementShots" value="@mold.ReplacementShots" />
                                             <input type="hidden" name="remarks" value="@mold.Remarks" />
@@ -114,7 +129,6 @@
                                         <form method="post" class="ajax-form rm d-inline" action=@Url.Action("Update")>
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="moldCode" value="@mold.MoldCode" />
-                                            <input type="hidden" name="moldName" value="@mold.MoldName" />
                                             <input type="hidden" name="storageLocation" value="@mold.StorageLocation" />
                                             <input type="hidden" name="warningShots" value="@mold.WarningShots" />
                                             <input type="hidden" name="remarks" value="@mold.Remarks" />
@@ -128,7 +142,23 @@
                                             </div>
                                         </form>
                                     </td>
-                                    <td>@mold.Remarks</td>
+                                    <td>
+                                        <form method="post" class="ajax-form rm d-inline" action=@Url.Action("Update")>
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="moldCode" value="@mold.MoldCode" />
+                                            <input type="hidden" name="storageLocation" value="@mold.StorageLocation" />
+                                            <input type="hidden" name="warningShots" value="@mold.WarningShots" />
+                                            <input type="hidden" name="replacementShots" value="@mold.ReplacementShots" />
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" class="form-control" name="remarks" value="@mold.Remarks" min="0" />
+                                                <span class="input-group-append">
+                                                    <button type="submit" class="btn btn-info btn-flat">
+                                                        <i class="fas fa-save"></i>
+                                                    </button>
+                                                </span>
+                                            </div>
+                                        </form>
+                                    </td>
                                     <td>
                                         <form method="post"
                                               class="ajax-form rm d-inline"
@@ -161,8 +191,8 @@
                 <!-- ページング -->
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <form method="get" class="form-inline">
-                        <input type="hidden" name="searchCode" value="@searchCode" />
-                        <input type="hidden" name="searchName" value="@searchName" />
+                        <input type="hidden" name="searchMoldCode" value="@searchMoldCode" />
+                        <input type="hidden" name="searchMoldName" value="@searchMoldName" />
                         <input type="hidden" name="sortBy" value="@sortBy" />
                         <input type="hidden" name="sortOrder" value="@sortOrder" />
                         <label for="pageSize" class="mr-2">表示件数:</label>
@@ -176,13 +206,13 @@
                     <div class="text-muted text-sm">@totalCount 件中@(((currentPage - 1) * pageSize) + (Model.Any() ? 1 : 0)) - @(Math.Min(currentPage * pageSize, totalCount)) 件を表示</div>
                     <ul class="pagination pagination-sm m-0">
                         <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
-                            <a class="page-link" href="@Url.Action("Index", new { searchCode, searchName, SearchStorageLocation, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a>
+                            <a class="page-link" href="@Url.Action("Index", new { searchMoldCode, searchMoldName, searchStorageLocation, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a>
                         </li>
                         <li class="page-item disabled">
                             <span class="page-link">@currentPage / @totalPages</span>
                         </li>
                         <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
-                            <a class="page-link" href="@Url.Action("Index", new { searchCode, searchName, SearchStorageLocation, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a>
+                            <a class="page-link" href="@Url.Action("Index", new { searchMoldCode, searchMoldName, searchStorageLocation, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a>
                         </li>
                     </ul>
                 </div>

@@ -117,7 +117,6 @@ namespace ActualProductionManager.Controllers
                 await context.SaveChangesAsync();
 
                 logger.LogInformation("修理履歴を削除しました: {Id}", id);
-
                 return Json(new
                 {
                     success = true,
@@ -126,7 +125,7 @@ namespace ActualProductionManager.Controllers
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "修理履歴削除エラー");
+                logger.LogError(ex, "修理履歴削除エラー： {id}", id);
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new
@@ -172,19 +171,16 @@ namespace ActualProductionManager.Controllers
                 await context.SaveChangesAsync();
 
                 logger.LogInformation("修理履歴を登録しました: {Id}, {MoldCode}, {MaintenanceDate}", history.Id, model.MoldCode, model.MaintenanceDate);
-
                 return Json(new
                 {
                     success = true,
                     message = "登録しました。",
-                    id = history.Id,
                     redirectUrl = Url.Action(nameof(Index))
                 });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "修理履歴登録エラー: {MoldCode}", model.MoldCode);
-
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     new
@@ -245,7 +241,6 @@ namespace ActualProductionManager.Controllers
                 await context.SaveChangesAsync();
 
                 logger.LogInformation("修理履歴を更新しました: {Id}", model.Id);
-
                 return Json(new
                 {
                     success = true,

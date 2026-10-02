@@ -105,7 +105,7 @@
                                     <td>@condition.ItemCode</td>
                                     <td>@condition.ItemName</td>
                                     <td>
-                                        <form method="post" action="@Url.Action("Update")">
+                                        <form method="post" class="ajax-form rm d-inline" action="@Url.Action("Update")">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="lineCode" value="@condition.LineCode" />
                                             <input type="hidden" name="itemCode" value="@condition.ItemCode" />
@@ -121,7 +121,7 @@
                                         </form>
                                     </td>
                                     <td>
-                                        <form method="post" action="@Url.Action("Update")">
+                                        <form method="post" class="ajax-form rm d-inline" action="@Url.Action("Update")">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="lineCode" value="@condition.LineCode" />
                                             <input type="hidden" name="itemCode" value="@condition.ItemCode" />
@@ -137,11 +137,19 @@
                                         </form>
                                     </td>
                                     <td>
-                                        <form method="post" action="@Url.Action("Delete")">
+                                        <form method="post"
+                                              class="ajax-form rm d-inline"
+                                              action="@Url.Action("Delete")"
+                                              data-confirm-type="warning"
+                                              data-confirm-title="削除確認"
+                                              data-confirm-message="この生産条件を削除します。よろしいですか？"
+                                              data-confirm-button-text="削除"
+                                              data-cancel-button-text="キャンセル"
+                                              data-remove-target="tr">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="lineCode" value="@condition.LineCode" />
                                             <input type="hidden" name="itemCode" value="@condition.ItemCode" />
-                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('削除してよろしいですか？')">
+                                            <button type="submit" class="btn btn-danger btn-sm">
                                                 <i class="fas fa-trash"></i> 削除
                                             </button>
                                         </form>

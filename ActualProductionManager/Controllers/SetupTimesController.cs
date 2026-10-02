@@ -95,8 +95,7 @@ namespace ActualProductionManager.Controllers
             catch (Exception ex)
             {
                 logger.LogError(ex, "段取り時間データ取得エラー");
-                TempData["ErrorMessage"] = $"データ取得エラー: {ex.Message}";
-                return View(new List<SetupTimeViewModel>());
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -116,32 +115,31 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var setupTime = await context.SetupTimes
-                    .FirstOrDefaultAsync(s => s.LineCode == lineCode && s.ItemCode == itemCode);
-
-                if (setupTime == null)
-                {
-                    logger.LogWarning("更新対象の段取り時間が見つかりません: {LineCode}-{ItemCode}", lineCode, itemCode);
-                    TempData["ErrorMessage"] = "更新対象のデータが見つかりません";
-                    return RedirectToAction(nameof(Index));
-                }
-
+                var setupTime = await context.SetupTimes.FirstAsync(s => s.LineCode == lineCode && s.ItemCode == itemCode);
                 setupTime.TargetSetupTime = targetSetupTimeMinutes * 60;
                 setupTime.UpdatedAt = DateTime.UtcNow;
 
                 context.SetupTimes.Update(setupTime);
                 await context.SaveChangesAsync();
 
-                logger.LogInformation("段取り時間を更新しました: {LineCode}-{ItemCode} ({Minutes}分)", lineCode, itemCode, targetSetupTimeMinutes);
-                TempData["SuccessMessage"] = "更新しました。";
+                logger.LogInformation("段取り時間を更新しました: {LineCode}-{ItemCode}", lineCode, itemCode);
+                return Json(new
+                {
+                    success = true,
+                    message = "更新しました。",
+                });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "段取り時間更新エラー: {LineCode}-{ItemCode}", lineCode, itemCode);
-                TempData["ErrorMessage"] = $"更新エラー: {ex.Message}";
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "更新処理中にエラーが発生しました。"
+                    });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
@@ -156,29 +154,28 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var setupTime = await context.SetupTimes
-                    .FirstOrDefaultAsync(s => s.LineCode == lineCode && s.ItemCode == itemCode);
-
-                if (setupTime == null)
-                {
-                    logger.LogWarning("削除対象の段取り時間が見つかりません: {LineCode}-{ItemCode}", lineCode, itemCode);
-                    TempData["ErrorMessage"] = "削除対象のデータが見つかりません";
-                    return RedirectToAction(nameof(Index));
-                }
-
+                var setupTime = await context.SetupTimes.FirstAsync(s => s.LineCode == lineCode && s.ItemCode == itemCode);
                 context.SetupTimes.Remove(setupTime);
                 await context.SaveChangesAsync();
 
                 logger.LogInformation("段取り時間を削除しました: {LineCode}-{ItemCode}", lineCode, itemCode);
-                TempData["SuccessMessage"] = "削除しました。";
+                return Json(new
+                {
+                    success = true,
+                    message = "削除しました。"
+                });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "段取り時間削除エラー: {LineCode}-{ItemCode}", lineCode, itemCode);
-                TempData["ErrorMessage"] = $"削除エラー: {ex.Message}";
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "削除処理中にエラーが発生しました。"
+                    });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
@@ -207,19 +204,16 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                if (string.IsNullOrEmpty(lineCode) || string.IsNullOrEmpty(itemCode))
-                {
-                    TempData["ErrorMessage"] = "ラインコードと品目コードは必須です";
-                    return RedirectToAction(nameof(Create));
-                }
-
-                var existingSetupTime = await context.SetupTimes
-                    .FirstOrDefaultAsync(s => s.LineCode == lineCode && s.ItemCode == itemCode);
-
+                var existingSetupTime = await context.SetupTimes.FirstOrDefaultAsync(s => s.LineCode == lineCode && s.ItemCode == itemCode);
                 if (existingSetupTime != null)
                 {
-                    TempData["ErrorMessage"] = "このラインコードと品目コードの組み合わせは既に登録されています";
-                    return RedirectToAction(nameof(Create));
+                    return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "このラインコードと品目コードの組み合わせは既に登録されています。"
+                    });
                 }
 
                 var setupTime = new SetupTime
@@ -234,15 +228,24 @@ namespace ActualProductionManager.Controllers
                 context.SetupTimes.Add(setupTime);
                 await context.SaveChangesAsync();
 
-                logger.LogInformation("段取り時間を登録しました: {LineCode}-{ItemCode} ({Minutes}分)", lineCode, itemCode, targetSetupTimeMinutes);
-                TempData["SuccessMessage"] = "登録しました。";
-                return RedirectToAction(nameof(Index));
+                logger.LogInformation("段取り時間を登録しました: {LineCode}-{ItemCode}", lineCode, itemCode);
+                return Json(new
+                {
+                    success = true,
+                    message = "登録しました。",
+                    redirectUrl = Url.Action(nameof(Index))
+                });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "段取り時間登録エラー");
-                TempData["ErrorMessage"] = $"登録エラー: {ex.Message}";
-                return RedirectToAction(nameof(Create));
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "登録処理中にエラーが発生しました。"
+                    });
             }
         }
 

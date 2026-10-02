@@ -8,7 +8,8 @@
             <div class="card-header">
                 <h3 class="card-title">生産条件新規登録</h3>
             </div>
-            <form id="registrationForm" method="post" action="@Url.Action("Store", "ProductionConditions")">
+            <form id="registrationForm" method="post" class="ajax-form rm" action="@Url.Action("Store")">
+                @Html.AntiForgeryToken()
                 <div class="card-body">
                     <div class="form-group">
                         <label for="lineCode">ラインコード <span class="text-danger">*</span></label>
@@ -108,7 +109,7 @@
                         type: 'GET',
                         data: { code: code },
                         success: function (data) {
-                            $('#lineName').val(data.name);
+                            $('#lineName').val(data.name || '');
                         },
                         error: function () {
                             $('#lineName').val('');
@@ -128,7 +129,7 @@
                         type: 'GET',
                         data: { code: code },
                         success: function (data) {
-                            $('#itemName').val(data.name);
+                            $('#itemName').val(data.name || '');
                         },
                         error: function () {
                             $('#itemName').val('');
@@ -138,5 +139,6 @@
                     $('#itemName').val('');
                 }
             });
+        });
     </script>
 }

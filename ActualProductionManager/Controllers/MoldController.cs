@@ -66,7 +66,6 @@ namespace ActualProductionManager.Controllers
                     pageSize = 10;
                 }
 
-                page = Math.Max(page, 1);
                 var totalCount = await query.CountAsync();
                 var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
                 page = Math.Min(page, totalPages);
@@ -98,8 +97,7 @@ namespace ActualProductionManager.Controllers
             catch (Exception ex)
             {
                 logger.LogError(ex, "金型データ取得エラー");
-                TempData["ErrorMessage"] = $"データ取得エラー: {ex.Message}";
-                return View(new List<MoldViewModel>());
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -126,31 +124,18 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                moldCode = moldCode?.Trim() ?? string.Empty;
-                moldName = moldName?.Trim() ?? string.Empty;
-
-                var validationError = GetValidationError(
-                    moldCode,
-                    moldName,
-                    warningShots,
-                    replacementShots);
-
-                if (validationError != null)
+                if (warningShots >= replacementShots)
                 {
-                    TempData["ErrorMessage"] = validationError;
-                    return RedirectToAction(nameof(Index));
+                    return StatusCode(
+                        StatusCodes.Status500InternalServerError,
+                        new
+                        {
+                            success = false,
+                            message = "注意ショット数は交換ショット数より小さい値を指定してください。"
+                        });
                 }
 
-                var mold = await context.Molds.FirstOrDefaultAsync(m => m.Code == moldCode);
-                if (mold == null)
-                {
-                    logger.LogWarning("更新対象の金型が見つかりません: {Code}", moldCode);
-                    TempData["ErrorMessage"] = "更新対象のデータが見つかりません。";
-
-                    return RedirectToAction(nameof(Index));
-                }
-
-                mold.Name = moldName;
+                var mold = await context.Molds.FirstAsync(m => m.Code == moldCode);
                 mold.StorageLocation = storageLocation;
                 mold.WarningShots = warningShots;
                 mold.ReplacementShots = replacementShots;
@@ -161,15 +146,23 @@ namespace ActualProductionManager.Controllers
                 await context.SaveChangesAsync();
 
                 logger.LogInformation("金型を更新しました: {Code}", moldCode);
-                TempData["SuccessMessage"] = "更新しました。";
+                return Json(new
+                {
+                    success = true,
+                    message = "更新しました。",
+                });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "金型更新エラー: {Code}", moldCode);
-                TempData["ErrorMessage"] = $"更新エラー: {ex.Message}";
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "更新処理中にエラーが発生しました。"
+                    });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
@@ -187,35 +180,39 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                moldCode = moldCode?.Trim() ?? string.Empty;
-
-                var mold = await context.Molds.FirstOrDefaultAsync(m => m.Code == moldCode);
-                if (mold == null)
-                {
-                    logger.LogWarning("削除対象の金型が見つかりません: {Code}", moldCode);
-                    TempData["ErrorMessage"] = "削除対象のデータが見つかりません。";
-
-                    return RedirectToAction(nameof(Index));
-                }
-
+                var mold = await context.Molds.FirstAsync(m => m.Code == moldCode);
                 context.Molds.Remove(mold);
                 await context.SaveChangesAsync();
 
                 logger.LogInformation("金型を削除しました: {Code}", moldCode);
-                TempData["SuccessMessage"] = "削除しました。";
+                return Json(new
+                {
+                    success = true,
+                    message = "削除しました。"
+                });
             }
             catch (DbUpdateException ex)
             {
                 logger.LogWarning(ex, "参照データが存在するため金型を削除できません: {Code}", moldCode);
-                TempData["ErrorMessage"] = "ショット実績または修理履歴から参照されているため、この金型は削除できません。";
+                return StatusCode(
+                    StatusCodes.Status400BadRequest,
+                    new
+                    {
+                        success = false,
+                        message = "ショット実績または修理履歴から参照されているため、この金型は削除できません。"
+                    });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "金型削除エラー: {Code}", moldCode);
-                TempData["ErrorMessage"] = $"削除エラー: {ex.Message}";
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "削除処理中にエラーが発生しました。"
+                    });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
@@ -239,17 +236,27 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                if (!(model.ReplacementShots >= model.WarningShots))
-                {
-                    ModelState.AddModelError(nameof(MoldRegistrationViewModel.WarningShots), "交換ショット数は注意ショット数以上を指定してください。");
-                    return View("Create", model);
-                }
-
                 var exists = await context.Molds.AnyAsync(m => m.Code == model.MoldCode);
                 if (exists)
                 {
-                    ModelState.AddModelError(nameof(model.MoldCode), "この金型コードは既に登録されています。");
-                    return View("Create", model);
+                    return StatusCode(
+                        StatusCodes.Status500InternalServerError,
+                        new
+                        {
+                            success = false,
+                            message = "この金型コードは既に登録されています。"
+                        });
+                }
+
+                if (!(model.ReplacementShots >= model.WarningShots))
+                {
+                    return StatusCode(
+                        StatusCodes.Status500InternalServerError,
+                        new
+                        {
+                            success = false,
+                            message = "交換ショット数は注意ショット数以上を指定してください。"
+                        });
                 }
 
                 var mold = new Mold
@@ -268,14 +275,23 @@ namespace ActualProductionManager.Controllers
                 await context.SaveChangesAsync();
 
                 logger.LogInformation("金型を登録しました: {Code}", model.MoldCode);
-                TempData["SuccessMessage"] = "登録しました。";
-                return RedirectToAction(nameof(Index));
+                return Json(new
+                {
+                    success = true,
+                    message = "登録しました。",
+                    redirectUrl = Url.Action(nameof(Index))
+                });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "金型登録エラー: {Code}", model.MoldCode);
-                TempData["ErrorMessage"] = $"登録エラー: {ex.Message}";
-                return View("Create", model);
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "登録処理中にエラーが発生しました。"
+                    });
             }
         }
 
@@ -461,45 +477,6 @@ namespace ActualProductionManager.Controllers
                 logger.LogError(ex, "金型CSV取込エラー");
                 return Json(new { success = false, error = $"取込処理中にエラーが発生しました: {ex.Message}" });
             }
-        }
-
-        /// <summary>
-        /// 更新処理で使用する検証メッセージを返します。
-        /// </summary>
-        private static string? GetValidationError(
-            string code,
-            string name,
-            long warningShots,
-            long replacementShots)
-        {
-            if (string.IsNullOrWhiteSpace(code))
-            {
-                return "金型コードは必須です。";
-            }
-
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return "金型名称は必須です。";
-            }
-
-            if (warningShots < 0)
-            {
-                return "注意ショット数は0以上で指定してください。";
-            }
-
-            if (replacementShots <= 0)
-            {
-                return "交換ショット数は0より大きい値を指定してください。";
-            }
-
-            if (warningShots >= replacementShots)
-            {
-                return
-                    "注意ショット数は交換ショット数より" +
-                    "小さい値を指定してください。";
-            }
-
-            return null;
         }
 
         /// <summary>

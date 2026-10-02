@@ -18,17 +18,6 @@
     var lastItemNumber = Model.Any() ? Math.Min(currentPage * pageSize, totalCount) : 0;
 }
 
-@if (ViewData["ErrorMessage"] != null)
-{
-    <script>
-        document.addEventListener(
-            'DOMContentLoaded',
-            function () {
-                AppNotify.error('@ViewData["ErrorMessage"]');
-            });
-    </script>
-}
-
 <div class="row">
     <div class="col-12">
         <div class="card">

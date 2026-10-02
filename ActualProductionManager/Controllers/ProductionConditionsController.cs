@@ -95,8 +95,7 @@ namespace ActualProductionManager.Controllers
             catch (Exception ex)
             {
                 logger.LogError(ex, "生産条件データ取得エラー");
-                TempData["ErrorMessage"] = $"データ取得エラー: {ex.Message}";
-                return View(new List<ProductionConditionViewModel>());
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -118,16 +117,7 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var condition = await context.ProductionConditions
-                    .FirstOrDefaultAsync(c => c.LineCode == lineCode && c.ItemCode == itemCode);
-
-                if (condition == null)
-                {
-                    logger.LogWarning("更新対象の生産条件が見つかりません: {LineCode}-{ItemCode}", lineCode, itemCode);
-                    TempData["ErrorMessage"] = "更新対象のデータが見つかりません";
-                    return RedirectToAction(nameof(Index));
-                }
-
+                var condition = await context.ProductionConditions.FirstAsync(c => c.LineCode == lineCode && c.ItemCode == itemCode);
                 condition.TargetCycleTime = targetCycleTime ?? condition.TargetCycleTime;
                 condition.PiecesPerCycle = piecesPerCycle ?? condition.PiecesPerCycle;
                 condition.UpdatedAt = DateTime.UtcNow;
@@ -136,15 +126,23 @@ namespace ActualProductionManager.Controllers
                 await context.SaveChangesAsync();
 
                 logger.LogInformation("生産条件を更新しました: {LineCode}-{ItemCode}", lineCode, itemCode);
-                TempData["SuccessMessage"] = "更新しました。";
+                return Json(new
+                {
+                    success = true,
+                    message = "更新しました。",
+                });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "生産条件更新エラー: {LineCode}-{ItemCode}", lineCode, itemCode);
-                TempData["ErrorMessage"] = $"更新エラー: {ex.Message}";
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "更新処理中にエラーが発生しました。"
+                    });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
@@ -159,29 +157,28 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var condition = await context.ProductionConditions
-                    .FirstOrDefaultAsync(c => c.LineCode == lineCode && c.ItemCode == itemCode);
-
-                if (condition == null)
-                {
-                    logger.LogWarning("削除対象の生産条件が見つかりません: {LineCode}-{ItemCode}", lineCode, itemCode);
-                    TempData["ErrorMessage"] = "削除対象のデータが見つかりません";
-                    return RedirectToAction(nameof(Index));
-                }
-
+                var condition = await context.ProductionConditions.FirstAsync(c => c.LineCode == lineCode && c.ItemCode == itemCode);
                 context.ProductionConditions.Remove(condition);
                 await context.SaveChangesAsync();
 
                 logger.LogInformation("生産条件を削除しました: {LineCode}-{ItemCode}", lineCode, itemCode);
-                TempData["SuccessMessage"] = "削除しました。";
+                return Json(new
+                {
+                    success = true,
+                    message = "削除しました。"
+                });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "生産条件削除エラー: {LineCode}-{ItemCode}", lineCode, itemCode);
-                TempData["ErrorMessage"] = $"削除エラー: {ex.Message}";
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "削除処理中にエラーが発生しました。"
+                    });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
@@ -205,17 +202,16 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                if (string.IsNullOrEmpty(model.LineCode) || string.IsNullOrEmpty(model.ItemCode))
-                {
-                    TempData["ErrorMessage"] = "ラインコードと品目コードは必須です";
-                    return RedirectToAction(nameof(Create));
-                }
-
                 var existingCondition = await context.ProductionConditions.FirstOrDefaultAsync(c => c.LineCode == model.LineCode && c.ItemCode == model.ItemCode);
                 if (existingCondition != null)
                 {
-                    TempData["ErrorMessage"] = "このラインコードと品目コードの組み合わせは既に登録されています";
-                    return RedirectToAction(nameof(Create));
+                    return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "このラインコードと品目コードの組み合わせは既に登録されています。"
+                    });
                 }
 
                 var condition = new ProductionCondition
@@ -232,14 +228,23 @@ namespace ActualProductionManager.Controllers
                 await context.SaveChangesAsync();
 
                 logger.LogInformation("生産条件を登録しました: {LineCode}-{ItemCode}", model.LineCode, model.ItemCode);
-                TempData["SuccessMessage"] = "登録しました。";
-                return RedirectToAction(nameof(Index));
+                return Json(new
+                {
+                    success = true,
+                    message = "登録しました。",
+                    redirectUrl = Url.Action(nameof(Index))
+                });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "生産条件登録エラー");
-                TempData["ErrorMessage"] = $"登録エラー: {ex.Message}";
-                return RedirectToAction(nameof(Create));
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new
+                    {
+                        success = false,
+                        message = "登録処理中にエラーが発生しました。"
+                    });
             }
         }
 
@@ -393,7 +398,6 @@ namespace ActualProductionManager.Controllers
 
                 var successMessage = $"取込完了しました。追加: {insertCount}件、更新: {updateCount}件";
                 logger.LogInformation(successMessage);
-
                 return Json(new { success = true, message = successMessage, insertCount, updateCount });
             }
             catch (Exception ex)

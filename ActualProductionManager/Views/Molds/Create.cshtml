@@ -1,0 +1,46 @@
+﻿@{
+    ViewData["Title"] = "金型 - 新規登録";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">金型新規登録</h3>
+            </div>
+            <form id="registrationForm" method="post" class="ajax-form rm" action="@Url.Action("Store")">
+                @Html.AntiForgeryToken()
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="code">金型コード<span class="text-danger">*</span></label>
+                        <input type="text" id="moldCode" name="moldCode" class="form-control" value="@Model.MoldCode" placeholder="QRコードとして印字されているID" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="name">金型名称<span class="text-danger">*</span></label>
+                        <input type="text" id="moldName" name="moldName" class="form-control" value="@Model.MoldName" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="storageLocation">置場</label>
+                        <input type="text" id="storageLocation" name="storageLocation" class="form-control" value="@Model.StorageLocation" />
+                    </div>
+                    <div class="form-group">
+                        <label for="warningShots">注意ショット数</label>
+                        <input type="number" id="warningShots" name="warningShots" class="form-control" value="@Model.WarningShots" min="0" />
+                    </div>
+                    <div class="form-group">
+                        <label for="replacementShots">交換ショット数</label>
+                        <input type="number" id="replacementShots" name="replacementShots" class="form-control" value="@Model.ReplacementShots" min="0" />
+                    </div>
+                    <div class="form-group">
+                        <label for="remarks">備考</label>
+                        <textarea id="remarks" name="remarks" class="form-control" rows="3">@Model.Remarks</textarea>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">登録</button>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary">キャンセル</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

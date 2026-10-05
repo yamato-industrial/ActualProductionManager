@@ -8,40 +8,24 @@ namespace ActualProductionManager.Controllers
     /// ホームページの表示と例外処理を担当するコントローラークラス。
     /// アプリケーションのトップページおよびエラーページのレンダリングを処理します。
     /// </summary>
-    public class HomeController : Controller
+    /// <param name="logger">ロギングサービス。</param>
+    /// <param name="configuration">アプリケーション設定。</param>
+    /// <param name="env">ウェブホスト環境情報。</param>
+    public class HomeController(IConfiguration configuration, IWebHostEnvironment env) : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-        private readonly IConfiguration _configuration;
-        private readonly IWebHostEnvironment _env;
-
-        /// <summary>
-        /// HomeControllerのコンストラクタ。
-        /// </summary>
-        /// <param name="logger">ロギングサービス。</param>
-        /// <param name="configuration">アプリケーション設定。</param>
-        /// <param name="env">ウェブホスト環境情報。</param>
-        public HomeController(ILogger<HomeController> logger, IConfiguration configuration, IWebHostEnvironment env)
-        {
-            _logger = logger;
-            _configuration = configuration;
-            _env = env;
-        }
 
         /// <summary>
         /// ホームページ (インデックスページ) を表示します。
         /// 現在の環境情報とデータベース接続情報をビューに渡します。
         /// </summary>
         /// <returns>ホームページビュー。</returns>
+        [HttpGet]
         public IActionResult Index()
         {
-            // 実行環境名（Development または Production）を取得
-            var environmentName = _env.EnvironmentName;
-            // 設定ファイルからスキーマ名を取得
-            var schema = _configuration["Database:Schema"];
-            // 設定ファイルから接続文字列を取得
-            var connectionString = _configuration["Database:ConnectionString"];
+            var environmentName = env.EnvironmentName;
+            var schema = configuration["Database:Schema"];
+            var connectionString = configuration["Database:ConnectionString"];
 
-            // ビューで使用するデータを ViewData に格納
             ViewData["EnvironmentName"] = environmentName;
             ViewData["Schema"] = schema;
             ViewData["ConnectionString"] = connectionString;

@@ -19,10 +19,10 @@
             <div class="card-header">
                 <h3 class="card-title">生産条件一覧</h3>
                 <div class="card-tools">
-                    <a href="@Url.Action("Create")" class="btn btn-primary btn-sm">
+                    <a href="@Url.Action("Create")" class="btn btn-primary btn-sm mr-2">
                         <i class="fas fa-plus"></i> 新規登録
                     </a>
-                    <a href="@Url.Action("Import")" class="btn btn-success btn-sm">
+                    <a href="@Url.Action("Import")" class="btn btn-success btn-sm mr-2">
                         <i class="fas fa-file-csv"></i> CSV取込
                     </a>
                 </div>
@@ -33,11 +33,11 @@
                 <form method="get" class="form-inline" style="gap: 10px;">
                     <div class="form-group">
                         <label for="searchLineCode" class="mr-2">ラインコード:</label>
-                        <input type="text" id="searchLineCode" name="searchLineCode" class="form-control form-control-sm" value="@searchLineCode" placeholder="検索...">
+                        <input type="text" id="searchLineCode" name="searchLineCode" class="form-control form-control-sm" value="@searchLineCode">
                     </div>
                     <div class="form-group">
                         <label for="searchItemCode" class="mr-2">品目コード:</label>
-                        <input type="text" id="searchItemCode" name="searchItemCode" class="form-control form-control-sm" value="@searchItemCode" placeholder="検索...">
+                        <input type="text" id="searchItemCode" name="searchItemCode" class="form-control form-control-sm" value="@searchItemCode">
                     </div>
                     <button type="submit" class="btn btn-info btn-sm">
                         <i class="fas fa-search"></i> 検索
@@ -105,11 +105,12 @@
                                     <td>@condition.ItemCode</td>
                                     <td>@condition.ItemName</td>
                                     <td>
-                                        <form method="post" action="@Url.Action("Update")" style="display:inline;">
+                                        <form method="post" class="ajax-form rm d-inline" action="@Url.Action("Update")">
+                                            @Html.AntiForgeryToken()
                                             <input type="hidden" name="lineCode" value="@condition.LineCode" />
                                             <input type="hidden" name="itemCode" value="@condition.ItemCode" />
                                             <input type="hidden" name="piecesPerCycle" value="@condition.PiecesPerCycle" />
-                                            <div class="input-group input-group-sm" style="width: 120px;">
+                                            <div class="input-group input-group-sm">
                                                 <input type="number" class="form-control" name="targetCycleTime" value="@condition.TargetCycleTime" min="1" />
                                                 <span class="input-group-append">
                                                     <button type="submit" class="btn btn-info btn-flat">
@@ -120,11 +121,12 @@
                                         </form>
                                     </td>
                                     <td>
-                                        <form method="post" action="@Url.Action("Update")" style="display:inline;">
+                                        <form method="post" class="ajax-form rm d-inline" action="@Url.Action("Update")">
+                                            @Html.AntiForgeryToken()
                                             <input type="hidden" name="lineCode" value="@condition.LineCode" />
                                             <input type="hidden" name="itemCode" value="@condition.ItemCode" />
                                             <input type="hidden" name="TargetCycleTime" value="@condition.TargetCycleTime" />
-                                            <div class="input-group input-group-sm" style="width: 120px;">
+                                            <div class="input-group input-group-sm">
                                                 <input type="number" class="form-control" name="piecesPerCycle" value="@condition.PiecesPerCycle" min="1" />
                                                 <span class="input-group-append">
                                                     <button type="submit" class="btn btn-info btn-flat">
@@ -135,9 +137,22 @@
                                         </form>
                                     </td>
                                     <td>
-                                        <a href="@Url.Action("Delete", new { lineCode = condition.LineCode, itemCode = condition.ItemCode })" class="btn btn-danger btn-sm" onclick="return confirm('削除してよろしいですか？')">
-                                            <i class="fas fa-trash"></i> 削除
-                                        </a>
+                                        <form method="post"
+                                              class="ajax-form rm d-inline"
+                                              action="@Url.Action("Delete")"
+                                              data-confirm-type="warning"
+                                              data-confirm-title="削除確認"
+                                              data-confirm-message="この生産条件を削除します。よろしいですか？"
+                                              data-confirm-button-text="削除"
+                                              data-cancel-button-text="キャンセル"
+                                              data-remove-target="tr">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="lineCode" value="@condition.LineCode" />
+                                            <input type="hidden" name="itemCode" value="@condition.ItemCode" />
+                                            <button type="submit" class="btn btn-danger btn-sm">
+                                                <i class="fas fa-trash"></i> 削除
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             }
@@ -151,6 +166,7 @@
                     </tbody>
                 </table>
 
+                <!-- ページング -->
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <form method="get" class="form-inline">
                         <input type="hidden" name="searchLineCode" value="@searchLineCode" />
@@ -167,9 +183,15 @@
                     </form>
                     <div class="text-muted text-sm">@totalCount 件中 @(((currentPage - 1) * pageSize) + (Model.Any() ? 1 : 0)) - @(Math.Min(currentPage * pageSize, totalCount)) 件を表示</div>
                     <ul class="pagination pagination-sm m-0">
-                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a></li>
-                        <li class="page-item disabled"><span class="page-link">@currentPage / @totalPages</span></li>
-                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")"><a class="page-link" href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a></li>
+                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy, sortOrder, pageSize, page = currentPage - 1 })">前へ</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">@currentPage / @totalPages</span>
+                        </li>
+                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { searchLineCode, searchItemCode, sortBy, sortOrder, pageSize, page = currentPage + 1 })">次へ</a>
+                        </li>
                     </ul>
                 </div>
             </div>

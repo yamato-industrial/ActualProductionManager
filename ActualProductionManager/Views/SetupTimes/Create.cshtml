@@ -1,6 +1,4 @@
-﻿@model List<ActualProductionManager.Controllers.SetupTimeRegistrationViewModel>
-
-@{
+﻿@{
     ViewData["Title"] = "段取り時間 - 新規登録";
 }
 
@@ -10,11 +8,12 @@
             <div class="card-header">
                 <h3 class="card-title">段取り時間新規登録</h3>
             </div>
-            <form id="registrationForm" method="post" action="@Url.Action("Store", "SetupTimes")">
+            <form id="registrationForm" method="post" class="ajax-form rm" action="@Url.Action("Store")">
+                @Html.AntiForgeryToken()
                 <div class="card-body">
                     <div class="form-group">
                         <label for="lineCode">ラインコード <span class="text-danger">*</span></label>
-                        <select id="lineCode" name="lineCode" class="form-control" style="width: 100%;" required>
+                        <select id="lineCode" name="lineCode" class="form-control" required>
                             <option value="">選択してください</option>
                         </select>
                     </div>
@@ -24,7 +23,7 @@
                     </div>
                     <div class="form-group">
                         <label for="itemCode">品目コード <span class="text-danger">*</span></label>
-                        <select id="itemCode" name="itemCode" class="form-control" style="width: 100%;" required>
+                        <select id="itemCode" name="itemCode" class="form-control" required>
                             <option value="">選択してください</option>
                         </select>
                     </div>
@@ -59,20 +58,16 @@
                     dataType: 'json',
                     delay: 250,
                     data: function (params) {
-                        console.log('Sending search term:', params.term);
                         return {
-                            search: params.term || ''
+                            search: params.term
                         };
                     },
                     processResults: function (data) {
-                        console.log('GetLines response:', data);
                         return {
-                            results: data.results || []
+                            results: data.results
                         };
                     },
-                    error: function (xhr, status, error) {
-                        console.error('GetLines AJAX error:', status, error, xhr.responseText);
-                    }
+                    cache: true
                 },
                 minimumInputLength: 0
             });
@@ -87,20 +82,16 @@
                     dataType: 'json',
                     delay: 250,
                     data: function (params) {
-                        console.log('Sending search term:', params.term);
                         return {
-                            search: params.term || ''
+                            search: params.term
                         };
                     },
                     processResults: function (data) {
-                        console.log('GetItems response:', data);
                         return {
-                            results: data.results || []
+                            results: data.results
                         };
                     },
-                    error: function (xhr, status, error) {
-                        console.error('GetItems AJAX error:', status, error, xhr.responseText);
-                    }
+                    cache: true
                 },
                 minimumInputLength: 0
             });
@@ -142,15 +133,6 @@
                     });
                 } else {
                     $('#itemName').val('');
-                }
-            });
-
-            // フォーム送信時の検証
-            $('#registrationForm').on('submit', function (e) {
-                if (!$('#lineCode').val() || !$('#itemCode').val() || !$('#targetSetupTime').val()) {
-                    e.preventDefault();
-                    alert('必須項目をすべて入力してください');
-                    return false;
                 }
             });
         });

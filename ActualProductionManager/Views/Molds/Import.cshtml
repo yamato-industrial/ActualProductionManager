@@ -1,0 +1,146 @@
+﻿@{
+    ViewData["Title"] = "金型 CSV取込";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">CSV取込</h3>
+            </div>
+
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5 class="mb-3">
+                        <i class="fas fa-file-csv text-success"></i>
+                        CSVファイルの形式
+                    </h5>
+
+                    <div class="bg-light border-left border-4 border-success p-3 mb-3">
+                        <div class="font-monospace text-dark">
+                            金型コード,金型名称,置場,注意ショット数,交換ショット数,備考
+                        </div>
+                    </div>
+
+                    <h6 class="mb-2">例：</h6>
+                    <div class="bg-white border border-secondary rounded p-3">
+                        <div class="font-monospace text-dark">
+                            V1StGXR8_Z5jdHi6B-myT,ケース金型,金型棚A-01,80000,100000,初期登録<br />
+                            X7hL9N2pQ4rT6vW8,カバー金型,金型棚B-02,150000,200000,<br />
+                            A3bC5dE7fG9hJ1kL,本体金型,成形1号機横,50000,75000,予備金型あり
+                        </div>
+                    </div>
+                </div>
+
+                <hr />
+
+                <form id="importForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="csvFile">CSVファイルを選択<span class="text-danger">*</span></label>
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="csvFile" name="csvFile" accept=".csv,text/csv" required />
+                            <label class="custom-file-label" for="csvFile">ファイルを選択...</label>
+                        </div>
+                        <small class="form-text text-muted">*.csv形式のファイルのみ対応しています。</small>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            <strong>取込方法：</strong>同じ金型コードが既に登録されている場合は更新し、未登録の金型コードは新規追加します。
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" id="importButton" class="btn btn-primary">
+                            <i class="fas fa-upload"></i>取込を開始
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> キャンセル
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-header">
+                <h3 class="card-title">注意事項</h3>
+            </div>
+            <div class="card-body">
+                <ul class="small">
+                    <li>ファイルはUTF-8エンコーディングで保存してください</li>
+                    <li>ヘッダー行は含めないでください</li>
+                    <li>CSVは6列で構成してください</li>
+                    <li>金型コードには金型へ印字されているNanoIDを指定してください</li>
+                    <li>金型コードと金型名称は必須です</li>
+                    <li>注意ショット数は0以上の整数を指定してください</li>
+                    <li>交換ショット数は0より大きい整数を指定してください</li>
+                    <li>注意ショット数は交換ショット数より小さい値を指定してください</li>
+                    <li>置場と備考を省略する場合も、カンマは省略しないでください</li>
+                    <li>同じCSVファイル内で金型コードを重複させないでください</li>
+                    <li>エラーがある場合、CSV内のデータは保存されません</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ファイル名表示
+        document.getElementById('csvFile').addEventListener('change', function (e) {
+            var fileName = e.target.files[0]?.name || 'ファイルを選択...';
+            document.querySelector('.custom-file-label').textContent = fileName;
+        });
+
+        // フォーム送信処理
+        document.getElementById('importForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const form = this;
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('@Url.Action("ImportFile", "Molds")', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 成功時
+                    AppModal.showSuccess(
+                        'インポート完了',
+                        `${data.message}`
+                    );
+
+                    // 2秒後に一覧ページへリダイレクト
+                    setTimeout(() => {
+                        window.location.href = '@Url.Action("Index", "Molds")';
+                    }, 2000);
+                } else {
+                    // エラー時
+                    let errorMessage = data.error;
+                    if (data.details) {
+                        errorMessage += '<br><br>' + data.details;
+                    }
+
+                    AppModal.showError(
+                        'インポートエラー',
+                        errorMessage
+                    );
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                AppModal.showError(
+                    'エラーが発生しました',
+                    'インポート処理中に予期しないエラーが発生しました。'
+                );
+            }
+        });
+    </script>
+}

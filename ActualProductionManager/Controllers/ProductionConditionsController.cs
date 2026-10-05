@@ -202,8 +202,8 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var existingCondition = await context.ProductionConditions.FirstOrDefaultAsync(c => c.LineCode == model.LineCode && c.ItemCode == model.ItemCode);
-                if (existingCondition != null)
+                var existingCondition = await context.ProductionConditions.AnyAsync(c => c.LineCode == model.LineCode && c.ItemCode == model.ItemCode);
+                if (existingCondition)
                 {
                     return StatusCode(
                     StatusCodes.Status500InternalServerError,

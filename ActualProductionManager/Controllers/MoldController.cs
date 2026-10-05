@@ -234,8 +234,8 @@ namespace ActualProductionManager.Controllers
         {
             try
             {
-                var exists = await context.Molds.AnyAsync(m => m.Code == model.MoldCode);
-                if (exists)
+                var existingMold = await context.Molds.AnyAsync(m => m.Code == model.MoldCode);
+                if (existingMold)
                 {
                     return StatusCode(
                         StatusCodes.Status500InternalServerError,
